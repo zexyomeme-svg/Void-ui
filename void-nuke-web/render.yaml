@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: void-nuke-web
+    env: python
+    region: oregon # free tier available
+    plan: free
+    branch: main
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app --workers 1 --threads 2 --timeout 120 --bind 0.0.0.0:$PORT --worker-class gthread"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: PYTHONUNBUFFERED
+        value: 1
+      - key: PYTHONDONTWRITEBYTECODE
+        value: 1
+      - key: PORT
+        value: 10000
+    healthCheckPath: /health
+    autoDeploy: false
+
+# Render Free Tier Specs:
+# 512 MB RAM, 0.1 CPU, 750 hours/month
+# Optimized with:
+# - 1 worker (not 2-4) to stay under 512MB
+# - gthread with 2 threads (low CPU)
+# - Bot runs in same process thread, not extra worker
+# - Semaphore 3 for Discord API calls

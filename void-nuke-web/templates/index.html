@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VOID-NUKE WEB // Render Optimized</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@500;700&display=swap');
+:root{
+  --bg:#0a0a0a;
+  --card:#141414;
+  --card2:#1a1a1a;
+  --border:#252525;
+  --red:#ff1a1a;
+  --red2:#b30000;
+  --red-glow:0 0 20px rgba(255,26,26,.3);
+  --text:#f5f5f5;
+  --dim:#888;
+  --dim2:#555;
+  --green:#00ff88;
+  --ok:#ff3333;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;min-height:100vh;overflow-x:hidden}
+.mono{font-family:'JetBrains Mono',monospace}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--red2)}
+
+/* Header */
+.header{border-bottom:1px solid var(--border);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:rgba(10,10,10,.9);backdrop-filter:blur(12px);z-index:100}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-mark{width:36px;height:36px;background:var(--red);color:#000;display:grid;place-items:center;font-weight:900;border-radius:4px;box-shadow:var(--red-glow);font-family:'JetBrains Mono';}
+.logo h1{font-size:18px;letter-spacing:.08em}
+.logo span{color:var(--dim);font-size:11px;letter-spacing:.2em;display:block}
+.status-pill{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);padding:6px 12px;border-radius:20px;font-size:12px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--dim2);box-shadow:0 0 0 0 transparent;animation:pulse 2s infinite}
+.dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}
+.dot.off{background:var(--red)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,255,136,.4)}70%{box-shadow:0 0 0 6px rgba(0,255,136,0)}100%{box-shadow:0 0 0 0 transparent}}
+
+/* Layout */
+.wrap{max-width:1400px;margin:0 auto;padding:20px;display:grid;grid-template-columns:320px 1fr;gap:20px}
+@media(max-width:1000px){.wrap{grid-template-columns:1fr}}
+
+/* Side */
+.side{display:flex;flex-direction:column;gap:16px;position:sticky;top:78px;height:fit-content}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.card-head{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.card-head h3{font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim)}
+.card-body{padding:14px}
+.input{width:100%;background:#0e0e0e;border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-family:'JetBrains Mono';font-size:13px;outline:none;transition:.2s}
+.input:focus{border-color:var(--red);box-shadow:var(--red-glow)}
+.input::placeholder{color:var(--dim2)}
+.label{font-size:11px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;display:block}
+.btn{cursor:pointer;border:none;border-radius:6px;padding:10px 16px;font-family:'Space Grotesk';font-weight:700;letter-spacing:.05em;text-transform:uppercase;font-size:12px;transition:.2s;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn-red{background:var(--red);color:#000;box-shadow:var(--red-glow)}
+.btn-red:hover{background:#ff3333;transform:translateY(-1px)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--dim)}
+.btn-ghost:hover{border-color:var(--red);color:var(--text)}
+.btn-sm{padding:6px 10px;font-size:11px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.stack{display:flex;flex-direction:column;gap:10px}
+
+/* Guild info */
+.guild{display:flex;gap:12px;align-items:center;padding:10px;background:var(--card2);border-radius:8px;border:1px solid var(--border)}
+.guild-icon{width:44px;height:44px;border-radius:8px;background:#222;display:grid;place-items:center;font-weight:800;font-size:18px;overflow:hidden}
+.guild-icon img{width:100%;height:100%;object-fit:cover}
+.guild b{font-size:14px}
+.guild small{color:var(--dim);font-size:12px;font-family:'JetBrains Mono'}
+
+/* Logs */
+.log-wrap{height:320px;overflow:auto;background:#0c0c0c;border:1px solid var(--border);border-radius:8px;padding:10px;font-family:'JetBrains Mono';font-size:12px;line-height:1.6}
+.log-line{display:flex;gap:8px;padding:2px 0;border-bottom:1px dashed #161616}
+.log-ts{color:var(--dim2);flex-shrink:0}
+.log-lvl{flex-shrink:0;width:44px;text-align:center;border-radius:3px;font-weight:700;font-size:10px;padding:1px 4px}
+.lvl-OK{background:rgba(255,26,26,.15);color:var(--red);border:1px solid rgba(255,26,26,.3)}
+.lvl-ERR{background:rgba(255,0,0,.15);color:#ff5555}
+.lvl-WARN{background:rgba(255,200,0,.12);color:#ffcc00}
+.lvl-INFO{background:rgba(255,255,255,.06);color:var(--dim)}
+
+/* Main */
+.main{display:flex;flex-direction:column;gap:20px}
+.tabs{display:flex;gap:6px;overflow:auto;padding-bottom:2px}
+.tab{padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);cursor:pointer;white-space:nowrap;transition:.2s}
+.tab.active{background:var(--text);color:#000;border-color:var(--text)}
+.tab:hover{border-color:var(--red);color:var(--text)}
+
+/* Command Grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.cmd{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;transition:.2s;position:relative;overflow:hidden}
+.cmd:hover{border-color:#333;transform:translateY(-2px)}
+.cmd.danger{border-left:3px solid var(--red)}
+.cmd::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--red),transparent);opacity:0;transition:.3s}
+.cmd:hover::before{opacity:1}
+.cmd-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.cmd-id{font-family:'JetBrains Mono';font-size:11px;background:#111;border:1px solid var(--border);padding:2px 6px;border-radius:4px;color:var(--dim)}
+.cmd-cat{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim2)}
+.cmd h4{font-size:14px;margin-bottom:4px}
+.cmd p{font-size:12px;color:var(--dim);line-height:1.4;min-height:34px}
+.cmd-act{margin-top:12px;display:flex;gap:6px}
+
+/* Modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);display:none;place-items:center;z-index:200;padding:20px}
+.modal.open{display:grid}
+.modal-box{background:var(--card);border:1px solid #333;border-radius:12px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.8)}
+.modal-head{padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-head h3{font-size:14px}
+.modal-body{padding:16px;display:flex;flex-direction:column;gap:12px}
+.check{display:flex;gap:8px;align-items:flex-start;background:rgba(255,26,26,.08);border:1px solid rgba(255,26,26,.2);padding:10px;border-radius:8px;font-size:13px}
+.check input{margin-top:2px}
+
+/* Footer */
+.footer{text-align:center;padding:20px;color:var(--dim2);font-size:11px;letter-spacing:.1em;border-top:1px solid var(--border);margin-top:40px;font-family:'JetBrains Mono'}
+.footer b{color:var(--red)}
+
+/* Optimized badge */
+.badge{font-size:10px;background:#111;border:1px solid var(--border);padding:3px 8px;border-radius:20px;color:var(--dim);font-family:'JetBrains Mono'}
+.badge.green{color:var(--green);border-color:rgba(0,255,136,.2);background:rgba(0,255,136,.08)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-mark">V</div>
+    <div>
+      <h1>VOID-NUKE WEB</h1>
+      <span class="mono">v1.0.0 // RENDER FREE TIER OPTIMIZED</span>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <span class="badge">512MB / 0.1 CPU</span>
+    <span class="badge green">GTHREAD 1W</span>
+    <div class="status-pill mono"><div class="dot off" id="dot"></div><span id="statusText">DISCONNECTED</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <!-- SIDEBAR -->
+  <div class="side">
+    <div class="card">
+      <div class="card-head"><h3>Connection</h3><span class="badge mono">SECURE</span></div>
+      <div class="card-body stack">
+        <div>
+          <label class="label">Bot Token</label>
+          <input id="token" class="input" type="password" placeholder="MTxx...">
+        </div>
+        <div>
+          <label class="label">Server ID (Guild ID)</label>
+          <input id="guildId" class="input" type="text" placeholder="123456789012345678">
+        </div>
+        <button id="btnConnect" class="btn btn-red" style="width:100%">CONNECT BOT</button>
+        <button id="btnDisconnect" class="btn btn-ghost" style="width:100%">DISCONNECT</button>
+        <div style="font-size:11px;color:var(--dim2);line-height:1.4" class="mono">
+          ⚠️ Educational use only. Use only on servers you own or with permission.<br>
+          Token is NOT stored, kept in memory only.
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="guildCard" style="display:none">
+      <div class="card-head"><h3>Server Info</h3><button class="btn btn-ghost btn-sm" onclick="loadGuilds()">REFRESH</button></div>
+      <div class="card-body stack">
+        <div class="guild" id="guildBox">
+          <div class="guild-icon" id="guildIcon">?</div>
+          <div><b id="guildName">-</b><br><small id="guildMeta" class="mono">-</small></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" class="mono" id="stats"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Live Logs <span id="logCount" class="badge mono">0</span></h3><button class="btn btn-ghost btn-sm" onclick="clearLogs()">CLEAR</button></div>
+      <div class="log-wrap" id="logWrap"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Render Health</h3><span class="badge green">OPTIMIZED</span></div>
+      <div class="card-body mono" style="font-size:11px;line-height:1.6;color:var(--dim)">
+        <div>✔ Gunicorn 1 worker / 4 threads</div>
+        <div>✔ Semaphore 3 concurrent API</div>
+        <div>✔ No message cache (RAM)</div>
+        <div>✔ Chunked gather 10 ops</div>
+        <div>✔ GC after batches</div>
+        <div>✔ 0.25s sleep anti rate-limit</div>
+        <div style="margin-top:8px;color:var(--dim2)">For 512MB, avoid >50 channels/roles per action. Use 10-20 for free tier safety.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div class="tabs" id="tabs"></div>
+      <div style="display:flex;gap:6px"><span class="badge mono">39 COMMANDS</span><span class="badge mono">WEB UI</span></div>
+    </div>
+
+    <div class="grid" id="cmdGrid"></div>
+
+    <div class="footer">
+      <b>VOID-NUKE v1.0.0</b> by 1s0e — t.me/v0idtool · discord.gg/voidv2<br>
+      <span style="color:#333">Render Free Tier Build · 512MB RAM · 0.1 CPU · gthread · Educational use only on your own servers</span>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <div class="modal-head"><h3 id="modalTitle">Action</h3><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const CATS = {
+  all: "All Commands",
+  nuke: "💣 Nuke / Raid",
+  mod: "🔨 Moderation",
+  channel: "📁 Channels & Roles",
+  member: "👤 Members",
+  message: "💬 Messaging / Spam",
+  util: "⚙️ Utilities"
+};
+
+const COMMANDS = [
+  {id:"nuke", num:"01", cat:"nuke", name:"Nuke", desc:"Delete all channels & roles, create 30 raid channels + webhook spam. Destructive.", danger:true, params:[
+    {k:"num_channels", label:"Channels to create (max 50, free tier 30)", type:"number", def:30},
+  ]},
+  {id:"auto_raid", num:"02", cat:"nuke", name:"Auto Raid", desc:"Auto delete + create 20 channels + roles + spam.", danger:true, params:[
+    {k:"num_msg", label:"Messages per channel", type:"number", def:3}
+  ]},
+  {id:"ban_all", num:"03", cat:"mod", name:"Ban All", desc:"Ban all members (except bots & self).", danger:true},
+  {id:"kick_all", num:"04", cat:"mod", name:"Kick All", desc:"Kick all members.", danger:true},
+  {id:"mute_all", num:"05", cat:"mod", name:"Mute All", desc:"Timeout all members.", params:[{k:"minutes", label:"Minutes", type:"number", def:60}]},
+  {id:"unban_all", num:"06", cat:"mod", name:"Unban All", desc:"Unban all banned users."},
+  {id:"del_channels", num:"07", cat:"channel", name:"Del Channels", desc:"Delete all channels.", danger:true},
+  {id:"del_emojis", num:"08", cat:"channel", name:"Del Emojis", desc:"Delete all emojis."},
+  {id:"del_stickers", num:"09", cat:"channel", name:"Del Stickers", desc:"Delete all stickers."},
+  {id:"create_channels", num:"10", cat:"channel", name:"Create Channels", desc:"Mass create text/voice channels.", params:[
+    {k:"quantity", label:"Quantity (max 50)", type:"number", def:10},
+    {k:"type", label:"Type text/voice", type:"select", opts:["text","voice"], def:"text"},
+    {k:"name", label:"Channel name", type:"text", def:"raid-by-void"}
+  ]},
+  {id:"create_roles", num:"11", cat:"channel", name:"Create Roles", desc:"Mass create roles.", params:[
+    {k:"quantity", label:"Quantity", type:"number", def:10},
+    {k:"name", label:"Role name", type:"text", def:"VOID-NUKE"}
+  ]},
+  {id:"create_cats", num:"12", cat:"channel", name:"Create Cats", desc:"Create categories.", params:[
+    {k:"quantity", label:"Quantity", type:"number", def:5},
+    {k:"name", label:"Name", type:"text", def:"VOID-NUKE"}
+  ]},
+  {id:"rename_channels", num:"13", cat:"channel", name:"Rename Channels", desc:"Rename all channels.", params:[{k:"name", label:"New name", type:"text", def:"raid-by-void"}]},
+  {id:"rename_roles", num:"14", cat:"channel", name:"Rename Roles", desc:"Rename all roles.", params:[{k:"name", label:"New name", type:"text", def:"VOID-NUKE"}]},
+  {id:"edit_server", num:"15", cat:"channel", name:"Edit Server", desc:"Change server name.", params:[{k:"name", label:"New server name", type:"text", def:"RAIDED BY VOID-NUKE"}]},
+  {id:"rename_members", num:"16", cat:"member", name:"Rename Members", desc:"Rename all members (nick).", params:[{k:"name", label:"Nickname", type:"text", def:"VOID"}]},
+  {id:"strip_roles", num:"21", cat:"member", name:"Strip Roles", desc:"Remove all roles from everyone."},
+  {id:"get_admin", num:"18", cat:"member", name:"Get Admin", desc:"Create admin role + give to all or specific ID.", params:[{k:"user_id", label:"User ID (blank = all)", type:"text", def:""}]},
+  {id:"mass_move", num:"31", cat:"member", name:"Move All VC", desc:"Move all voice members to one VC.", params:[{k:"target_id", label:"Target Voice Channel ID", type:"text", def:""}]},
+  {id:"deafen_all", num:"29", cat:"member", name:"Sourdine VC", desc:"Deafen all in voice."},
+  {id:"disconnect_all", num:"30", cat:"member", name:"Kick VC All", desc:"Disconnect all from voice."},
+  {id:"spam", num:"33", cat:"message", name:"Spam", desc:"Spam message in all text channels.", params:[
+    {k:"count", label:"Messages per channel (max 10)", type:"number", def:3},
+    {k:"content", label:"Content", type:"text", def:"@everyone RAID BY VOID-NUKE t.me/v0idtool"}
+  ]},
+  {id:"webhook_spam", num:"24", cat:"message", name:"Webhook Spam", desc:"Create webhook per channel & spam.", params:[
+    {k:"count", label:"Msgs per webhook", type:"number", def:2},
+    {k:"content", label:"Content", type:"text", def:"@everyone VOID-NUKE"}
+  ]},
+  {id:"dm_all", num:"22", cat:"message", name:"Message All", desc:"DM all members.", params:[{k:"content", label:"DM content", type:"text", def:"RAID BY VOID-NUKE"}]},
+  {id:"dm_spam_user", num:"23", cat:"message", name:"DM Spam User", desc:"Spam DM a specific user.", params:[
+    {k:"user_id", label:"Target User ID", type:"text", def:""},
+    {k:"count", label:"Count (max 20)", type:"number", def:5},
+    {k:"content", label:"Message", type:"text", def:"VOID-NUKE"}
+  ]},
+  {id:"thread_spam", num:"34", cat:"message", name:"Thread Spam", desc:"Create threads in all channels.", params:[
+    {k:"count", label:"Threads per channel", type:"number", def:2},
+    {k:"name", label:"Thread name", type:"text", def:"VOID-NUKE"}
+  ]},
+  {id:"invite_spam", num:"32", cat:"message", name:"Invite Spam", desc:"Create random invites.", params:[{k:"count", label:"Quantity", type:"number", def:5}]},
+  {id:"spoiler_spam", num:"37", cat:"message", name:"Spoiler Spam", desc:"Send spoiler-wrapped messages.", params:[
+    {k:"count", label:"Count", type:"number", def:2},
+    {k:"content", label:"Content", type:"text", def:"VOID"}
+  ]},
+  {id:"event_spam", num:"39", cat:"message", name:"Event Spam", desc:"Create scheduled events.", params:[
+    {k:"count", label:"Quantity", type:"number", def:3},
+    {k:"name", label:"Event name", type:"text", def:"VOID-NUKE TOOLS"}
+  ]},
+  {id:"server_info", num:"25", cat:"util", name:"Server Info", desc:"Get detailed server information."},
+  {id:"clone_server", num:"26", cat:"util", name:"Clone Server", desc:"Clone structure to JSON (log)."},
+  {id:"lockdown", num:"28", cat:"util", name:"Lockdown", desc:"Lock all text channels (no send)."},
+];
+
+let activeCat = "all";
+let currentAction = null;
+
+function renderTabs(){
+  const el = document.getElementById('tabs');
+  el.innerHTML = Object.entries(CATS).map(([k,v])=>`<div class="tab ${activeCat===k?'active':''}" onclick="setCat('${k}')">${v}</div>`).join('');
+}
+function setCat(c){
+  activeCat=c;
+  renderTabs();
+  renderGrid();
+}
+function renderGrid(){
+  const grid=document.getElementById('cmdGrid');
+  const list = activeCat==='all'? COMMANDS : COMMANDS.filter(x=>x.cat===activeCat);
+  grid.innerHTML = list.map(cmd=>`
+    <div class="cmd ${cmd.danger?'danger':''}">
+      <div class="cmd-top"><span class="cmd-id">#${cmd.num}</span><span class="cmd-cat">${CATS[cmd.cat]}</span></div>
+      <h4>${cmd.name}</h4>
+      <p>${cmd.desc}</p>
+      <div class="cmd-act">
+        <button class="btn ${cmd.danger?'btn-red':'btn-ghost'} btn-sm" style="flex:1" onclick="openAction('${cmd.id}')">${cmd.danger?'⚠️ RUN':'RUN'}</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Modal logic
+function openAction(id){
+  const cmd = COMMANDS.find(c=>c.id===id);
+  if(!cmd) return;
+  currentAction = cmd;
+  document.getElementById('modalTitle').innerText = `#${cmd.num} ${cmd.name}`;
+  let html = `<div style="font-size:13px;color:var(--dim)">${cmd.desc}</div>`;
+  if(cmd.params){
+    cmd.params.forEach(p=>{
+      if(p.type==='select'){
+        html+=`<div><label class="label">${p.label}</label><select class="input" id="p_${p.k}">${p.opts.map(o=>`<option value="${o}" ${o===p.def?'selected':''}>${o}</option>`).join('')}</select></div>`;
+      } else {
+        html+=`<div><label class="label">${p.label}</label><input class="input" id="p_${p.k}" type="${p.type}" value="${p.def}"></div>`;
+      }
+    });
+  }
+  if(cmd.danger){
+    html+=`<label class="check"><input type="checkbox" id="p_confirm"><span>I understand this is <b style="color:var(--red)">destructive</b> and I have permission to run it on this server. Free tier: using max 30 ops to protect RAM.</span></label>`;
+  }
+  html+=`<div style="display:flex;gap:8px"><button class="btn btn-red" style="flex:1" onclick="execute()">EXECUTE</button><button class="btn btn-ghost" style="flex:1" onclick="closeModal()">CANCEL</button></div>`;
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){ document.getElementById('modal').classList.remove('open'); currentAction=null; }
+
+async function execute(){
+  if(!currentAction) return;
+  const params = {};
+  if(currentAction.params){
+    currentAction.params.forEach(p=>{
+      const el=document.getElementById(`p_${p.k}`);
+      if(el) params[p.k]=el.value;
+    });
+  }
+  if(currentAction.danger){
+    const chk=document.getElementById('p_confirm');
+    if(!chk || !chk.checked){ alert("Please confirm destructive action"); return; }
+    params.confirm = true;
+  }
+  closeModal();
+  addLogLocal("INFO", `→ Starting ${currentAction.id}...`);
+  try{
+    const res = await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action: currentAction.id, params})});
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error||'Failed');
+    addLogLocal("OK", data.message||'Task started');
+  }catch(e){
+    addLogLocal("ERR", e.message);
+    alert("Error: "+e.message);
+  }
+}
+
+// Connection
+document.getElementById('btnConnect').onclick = async ()=>{
+  const token=document.getElementById('token').value.trim();
+  const guildId=document.getElementById('guildId').value.trim();
+  if(!token||!guildId){ alert("Token and Server ID required"); return; }
+  const btn=document.getElementById('btnConnect');
+  btn.disabled=true; btn.innerText="CONNECTING...";
+  try{
+    const r=await fetch('/api/connect',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token, guild_id:guildId})});
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error);
+    addLogLocal("INFO","Bot thread started, waiting for READY...");
+  }catch(e){ addLogLocal("ERR", e.message); alert(e.message); }
+  btn.disabled=false; btn.innerText="CONNECT BOT";
+};
+document.getElementById('btnDisconnect').onclick = async ()=>{
+  await fetch('/api/disconnect',{method:'POST'});
+  addLogLocal("WARN","Disconnected");
+};
+
+// Logs polling
+let logsCache = new Set();
+function addLogLocal(lvl,msg){
+  const wrap=document.getElementById('logWrap');
+  const ts=new Date().toLocaleTimeString();
+  const line=document.createElement('div');
+  line.className='log-line';
+  line.innerHTML=`<span class="log-ts">${ts}</span><span class="log-lvl lvl-${lvl}">${lvl}</span><span>${msg}</span>`;
+  wrap.appendChild(line);
+  wrap.scrollTop=wrap.scrollHeight;
+  document.getElementById('logCount').innerText = wrap.children.length;
+}
+
+async function pollLogs(){
+  try{
+    const r=await fetch('/api/logs?limit=100');
+    const logs=await r.json();
+    const wrap=document.getElementById('logWrap');
+    // simple diff: rebuild if new
+    if(logs.length){
+      wrap.innerHTML = logs.map(l=>`
+        <div class="log-line"><span class="log-ts">${l.ts}</span><span class="log-lvl lvl-${l.level}">${l.level}</span><span>${l.msg.replace(/</g,'&lt;')}</span></div>
+      `).join('');
+      wrap.scrollTop = wrap.scrollHeight;
+      document.getElementById('logCount').innerText = logs.length;
+    }
+  }catch{}
+}
+async function pollStatus(){
+  try{
+    const r=await fetch('/api/status');
+    const s=await r.json();
+    const dot=document.getElementById('dot');
+    const txt=document.getElementById('statusText');
+    const card=document.getElementById('guildCard');
+    if(s.connected){
+      dot.className='dot on';
+      txt.innerText=`CONNECTED • ${s.guild.name||'...'}`;
+      card.style.display='block';
+      if(s.guild && s.guild.name){
+        document.getElementById('guildName').innerText=s.guild.name;
+        document.getElementById('guildMeta').innerText=`${s.guild.members} members • ${s.guild.channels} ch • ${s.guild.roles} roles`;
+        document.getElementById('guildIcon').innerText=s.guild.name[0]?.toUpperCase()||'?';
+        document.getElementById('stats').innerHTML=`
+          <div style="background:#0e0e0e;border:1px solid #222;border-radius:6px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700">${s.guild.members}</div><div style="font-size:10px;color:#666">MEMBERS</div></div>
+          <div style="background:#0e0e0e;border:1px solid #222;border-radius:6px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700">${s.guild.channels}</div><div style="font-size:10px;color:#666">CHANNELS</div></div>
+        `;
+      }
+    }else{
+      dot.className='dot off';
+      txt.innerText='DISCONNECTED';
+      // keep card hidden if no guild
+      if(!s.guild || !Object.keys(s.guild).length) card.style.display='none';
+    }
+  }catch{}
+}
+async function clearLogs(){ await fetch('/api/logs/clear',{method:'POST'}); document.getElementById('logWrap').innerHTML=''; }
+async function loadGuilds(){
+  try{
+    const r=await fetch('/api/guilds');
+    const d=await r.json();
+    if(Array.isArray(d)){
+      addLogLocal("INFO", `Bot in ${d.length} guilds: ${d.map(g=>g.name).join(', ')}`);
+    }
+  }catch(e){ addLogLocal("ERR", e.message); }
+}
+
+setInterval(pollLogs,1500);
+setInterval(pollStatus,2000);
+pollLogs(); pollStatus(); renderTabs(); renderGrid();
+</script>
+</body>
+</html>
