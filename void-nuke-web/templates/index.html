@@ -253,29 +253,54 @@ document.getElementById('btnTestSend').onclick=async()=>{
   const content=document.getElementById('testContent').value.trim();
   const everyone=document.getElementById('testEveryone').checked;
   if(!content){showToast("Content required","warn"); return;}
-  const btn=document.getElementById('btnTestSend'); btn.disabled=true; btn.innerText="⏳ SENDING...";
-  document.getElementById('testSendResult').style.display='block';
-  document.getElementById('testSendResult').innerText='Sending test with safe_send()...';
+  const btn=document.getElementById('btnTestSend'); btn.disabled=true; btn.innerText="⏳ SENDING (detailed)...";
+  const resultEl=document.getElementById('testSendResult');
+  resultEl.style.display='block';
+  resultEl.innerHTML='⏳ Sending with safe_send_detailed()... checking 4 attempts, perms, channel type, archived/locked...';
+  resultEl.style.borderColor='#333';
   addLogLocal("INFO", `→ TEST SEND to ${chanId||'auto'}: ${content} everyone=${everyone}`);
   try{
     const res=await fetch('/api/test_send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel_id:chanId, content, everyone})});
-    const txt=await res.text(); let data; try{data=JSON.parse(txt)}catch{data={raw:txt};}
-    const resultEl=document.getElementById('testSendResult');
+    const txt=await res.text(); let data; try{data=JSON.parse(txt)}catch{data={raw:txt, error:txt.slice(0,500)};}
+    console.log("[TEST_SEND] full response", data);
     if(!res.ok){
-      resultEl.innerHTML=`<span style="color:var(--red)">❌ FAILED</span><br>Channel: ${data.channel||'unknown'}<br>Error: ${data.error||txt.slice(0,200)}<br><br><b>Perms:</b> ${JSON.stringify(data.perms||{},null,2).slice(0,500)}<br><br><b>Fix:</b> Need VIEW_CHANNEL + SEND_MESSAGES + EMBED_LINKS + MENTION_EVERYONE if @everyone`;
+      // Build detailed error view for raid-by-void case where perms true but fails
+      const attemptsHtml = (data.attempts||data.details?.attempts||[]).map(a=>`Attempt ${a.attempt}: ${a.success?'✅ OK':'❌ FAIL'} - ${a.error||'no error'} - ${a.content_preview||''} type=${a.type||''}`).join('<br>');
+      const fixHtml = (data.fix_suggestions||[]).map(f=>`• ${f}`).join('<br>');
+      const debug = data.debug||'';
+      resultEl.innerHTML=`
+        <span style="color:var(--red)">❌ FAILED after ${data.attempts?.length||'?'} attempts</span><br>
+        <b>Channel:</b> #${data.channel||'?'} (${data.channel_id||chanId}) type=${data.chan_info?.type||'?'} is_text=${data.chan_info?.is_text}<br>
+        <b>Error:</b> ${data.error||'(empty - see attempts)'}<br>
+        <b>Attempts:</b><br><div style="background:#111;border:1px solid #222;padding:6px;border-radius:4px;margin:6px 0;font-size:10px;max-height:120px;overflow:auto">${attemptsHtml||'no attempts log - check Live Logs'}</div>
+        <b>Perms:</b> VIEW=${data.perms?.view_channel} SEND=${data.perms?.send_messages} EMBED=${data.perms?.embed_links} EVERYONE=${data.perms?.mention_everyone} ARCHIVED=${data.perms?.is_archived} LOCKED=${data.perms?.is_locked}<br>
+        <div style="margin-top:8px"><b>Fix suggestions:</b><br>${fixHtml||'• Check SEND_MESSAGES + VIEW_CHANNEL<br>• Try without @everyone<br>• Try different channel from /api/channels list'}</div>
+        ${debug?`<div style="margin-top:8px;background:#1a1a00;border:1px solid #333;padding:6px;border-radius:4px"><b>Debug:</b> ${debug}</div>`:''}
+        ${data.traceback?`<div style="margin-top:8px;font-size:9px;background:#1a0000;padding:6px;border-radius:4px;max-height:100px;overflow:auto"><b>Traceback:</b><br>${String(data.traceback).slice(0,800).replace(/</g,'&lt;')}</div>`:''}
+        <div style="margin-top:8px"><b>For raid-by-void case:</b> Perms true but still fails usually means:<br>• Thread is archived/locked → unarchive<br>• Channel is actually Forum post (needs different send)<br>• Content blocked by Automod → try simple "hello" without links<br>• Bot timed out in channel? Check Server Settings → Members → bot not timed out<br>• Try another channel ID from Channels list</div>
+      `;
       resultEl.style.borderColor='var(--red)';
-      addLogLocal("ERR", `Test send failed #{data.channel}: ${data.error}`);
-      showToast("Test send FAILED - check result box + perms","err");
+      addLogLocal("ERR", `Test send FAIL #${data.channel}: ${data.error} | attempts ${data.attempts?.length}`);
+      showToast("Test FAILED - see detailed box + Live Logs","err");
     } else {
-      resultEl.innerHTML=`<span style="color:var(--green)">✅ SENT OK</span><br>Channel: #${data.channel} (${data.channel_id})<br>Perms: VIEW=${data.perms.view_channel} SEND=${data.perms.send_messages} EMBED=${data.perms.embed_links} EVERYONE=${data.perms.mention_everyone}<br><br>Check Discord - message should be there!`;
+      const attemptsHtml = (data.details?.attempts||[]).map(a=>`Attempt ${a.attempt}: ✅ ID ${a.message_id||''}`).join('<br>');
+      resultEl.innerHTML=`
+        <span style="color:var(--green)">✅ SENT OK - Message delivered!</span><br>
+        <b>Channel:</b> #${data.channel} (${data.channel_id}) type=${data.chan_info?.type}<br>
+        <b>Perms:</b> VIEW=${data.perms.view_channel} SEND=${data.perms.send_messages} EMBED=${data.perms.embed_links} EVERYONE=${data.perms.mention_everyone}<br>
+        <b>Attempts:</b> ${attemptsHtml||'1 attempt OK'}<br><br>
+        <span style="color:var(--green)">Check Discord - you should see the message! If not, channel might be muted for you.</span>
+      `;
       resultEl.style.borderColor='var(--green)';
-      addLogLocal("OK", `Test send OK in #${data.channel}`);
-      showToast(`Test sent OK in #${data.channel}! Check Discord`,"ok");
+      addLogLocal("OK", `Test send OK #${data.channel} perms VIEW=${data.perms.view_channel} SEND=${data.perms.send_messages}`);
+      showToast(`✅ Sent OK in #${data.channel}! Check Discord`,"ok");
     }
   }catch(e){
-    document.getElementById('testSendResult').innerText=`Exception: ${e.message}`;
+    resultEl.innerHTML=`<span style="color:var(--red)">Exception</span><br>${e.message}<br><br>Check console F12 + Live Logs`;
+    resultEl.style.borderColor='var(--red)';
     showToast("Test exception "+e.message,"err");
     addLogLocal("ERR", "Test exception "+e.message);
+    console.error(e);
   }
   btn.disabled=false; btn.innerText="📤 SEND TEST MESSAGE";
 };

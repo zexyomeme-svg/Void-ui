@@ -247,47 +247,75 @@ def channels():
 
 @app.route('/api/test_send', methods=['POST'])
 def test_send():
-    """Robust test send - guarantees message attempt with detailed diagnostics"""
+    """
+    Robust test send v6 - with detailed diagnostics for raid-by-void case
+    Where perms true but send fails with empty error
+    """
     if not manager.connected or not manager.bot:
-        return jsonify({"error":"Bot not connected"}),400
+        return jsonify({"ok":False,"error":"Bot not connected","perms":{}}),400
     data=request.get_json(silent=True) or {}
     channel_id=data.get("channel_id","").strip()
     content=data.get("content","VOID-NUKE ✅ Test message - Bot can send messages! 🚀").strip()
     use_everyone=data.get("everyone", False)
     
     g=manager.get_guild()
-    if not g: return jsonify({"error":"Guild not found"}),400
+    if not g: return jsonify({"ok":False,"error":"Guild not found"}),400
     
-    # Find channel
+    # Find channel - try fresh fetch
     chan=None
     if channel_id:
         try:
+            # Try cache first
             chan=g.get_channel(int(channel_id))
-        except: pass
-        if not chan or not isinstance(chan, discord.TextChannel):
-            return jsonify({"error":f"Channel {channel_id} not found or not text"}),400
+            if not chan:
+                # Try API fetch (blocking but ok for test)
+                log_info(f"Channel {channel_id} not in cache, trying fetch...")
+        except Exception as fetch_err:
+            log_warn(f"Channel fetch err {fetch_err}")
+
+        if not chan:
+            try:
+                chan=g.get_channel(int(channel_id))
+            except: pass
+
+        if not chan:
+            return jsonify({"ok":False,"error":f"Channel {channel_id} not found in cache - try /api/channels to list IDs","perms":{}}),400
+        # Allow threads too? But require TextChannel for simple test
+        if not isinstance(chan, (discord.TextChannel, discord.Thread, discord.ForumChannel)):
+            # Check if VoiceChannel with text? In new Discord, voice has text chat
+            if not hasattr(chan, 'send'):
+                return jsonify({"ok":False,"error":f"Channel {channel_id} type {type(chan)} does not support send() - is it category?","channel":getattr(chan,'name','?'),"channel_id":channel_id,"perms":{}}),400
     else:
-        # First text channel where bot can send
+        # Auto-find first writable text channel
         for c in g.channels:
             if isinstance(c, discord.TextChannel):
                 try:
-                    if g.me and c.permissions_for(g.me).send_messages:
+                    if g.me and c.permissions_for(g.me).send_messages and c.permissions_for(g.me).view_channel:
                         chan=c
                         break
                 except: continue
         if not chan:
-            # Fallback first text
             for c in g.channels:
                 if isinstance(c, discord.TextChannel):
                     chan=c
                     break
     
     if not chan:
-        return jsonify({"error":"No text channels found"}),400
+        return jsonify({"ok":False,"error":"No text channels found in guild"}),400
     
-    # Check perms
+    # Detailed perms + channel diagnostics
     perm_info={}
+    chan_info={}
     try:
+        chan_info={
+            "name": getattr(chan,'name','?'),
+            "id": str(getattr(chan,'id','?')),
+            "type": str(type(chan)),
+            "is_text": isinstance(chan, discord.TextChannel),
+            "is_thread": isinstance(chan, discord.Thread),
+            "is_voice": isinstance(chan, discord.VoiceChannel),
+            "guild_id": str(getattr(chan.guild,'id','?')) if hasattr(chan,'guild') else '?',
+        }
         if g.me:
             perms=chan.permissions_for(g.me)
             perm_info={
@@ -296,34 +324,88 @@ def test_send():
                 "embed_links": perms.embed_links,
                 "mention_everyone": perms.mention_everyone,
                 "attach_files": perms.attach_files,
+                "read_message_history": getattr(perms, 'read_message_history', False),
+                "manage_messages": getattr(perms, 'manage_messages', False),
             }
+            # Additional checks
+            perm_info["is_archived"] = getattr(chan, 'archived', False) if hasattr(chan, 'archived') else False
+            perm_info["is_locked"] = getattr(chan, 'locked', False) if hasattr(chan, 'locked') else False
     except Exception as e:
-        perm_info={"error":str(e)}
-    
-    # Try send via bot_loop
-    async def _do_send():
-        from bot_manager import safe_send, PUB
-        test_content = content
-        if use_everyone and "@everyone" not in test_content:
-            test_content = f"@everyone {test_content}"
-        # Try safe_send which has retries and stripping logic
-        ok = await safe_send(chan, test_content, retry=3)
-        return ok
-    
+        perm_info={"error":f"perm check exception: {e}", "traceback": __import__('traceback').format_exc()[:500]}
+
+    # Build test content
+    test_content = content
+    if use_everyone and "@everyone" not in test_content:
+        test_content = f"@everyone {test_content}"
+
+    # Try send via bot_loop with detailed version
+    async def _do_send_detailed():
+        from bot_manager import safe_send_detailed
+        ok, details = await safe_send_detailed(chan, test_content, retry=4)
+        return ok, details
+
     try:
-        future=asyncio.run_coroutine_threadsafe(_do_send(), manager.loop)
-        success=future.result(timeout=10)
+        future=asyncio.run_coroutine_threadsafe(_do_send_detailed(), manager.loop)
+        success, details = future.result(timeout=15)
         if success:
-            log_ok(f"TEST SEND OK in #{chan.name}")
-            return jsonify({"ok":True,"channel":chan.name,"channel_id":str(chan.id),"perms":perm_info,"message":"Test message sent! Check Discord"})
+            log_ok(f"TEST SEND OK in #{chan_info.get('name','?')} ID {chan_info.get('id')}")
+            return jsonify({
+                "ok":True,
+                "channel":chan_info.get('name'),
+                "channel_id":chan_info.get('id'),
+                "chan_info":chan_info,
+                "perms":perm_info,
+                "details":details,
+                "message":"✅ Test message sent! Check Discord channel - if you don't see it, check channel muted or hidden"
+            })
         else:
-            log_err(f"TEST SEND FAILED in #{chan.name}")
-            return jsonify({"ok":False,"channel":chan.name,"channel_id":str(chan.id),"perms":perm_info,"error":"Failed to send - check perms: send_messages, view_channel, mention_everyone if using @everyone"}),400
+            # Return detailed error - this fixes user's empty error issue
+            err_msg = details.get("error") or "Unknown error - all retries failed"
+            attempts = details.get("attempts", [])
+            # Build user-friendly fix suggestion
+            fix = []
+            if not perm_info.get("view_channel"): fix.append("Need VIEW_CHANNEL")
+            if not perm_info.get("send_messages"): fix.append("Need SEND_MESSAGES")
+            if not perm_info.get("embed_links"): fix.append("Embed links missing but not critical")
+            if use_everyone and not perm_info.get("mention_everyone"): fix.append("Disable @everyone checkbox - need MENTION_EVERYONE")
+            if chan_info.get("is_archived"): fix.append("Channel is ARCHIVED - unarchive in Discord")
+            if chan_info.get("is_locked"): fix.append("Thread is LOCKED - unlock")
+            if not is_text and not chan_info.get("is_thread"):
+                fix.append(f"Channel type {chan_info.get('type')} may not support text - try a TextChannel")
+
+            # If perms all true but still fails, suggest common Discord issues
+            if perm_info.get("view_channel") and perm_info.get("send_messages"):
+                fix.append("Perms true but still fails? Check: 1) Channel not deleted? 2) Bot not timed out? 3) Slowmode? 4) Automod blocked? 5) Try without @everyone and shorter content")
+                fix.append("Also try: Server Settings → Safety → Disable Automod for test, or try different channel")
+
+            log_err(f"TEST SEND FAILED #{chan_info.get('name')} err={err_msg[:200]} attempts={len(attempts)}")
+            return jsonify({
+                "ok":False,
+                "channel":chan_info.get('name'),
+                "channel_id":chan_info.get('id'),
+                "chan_info":chan_info,
+                "perms":perm_info,
+                "error": err_msg,
+                "details": details,
+                "attempts": attempts,
+                "fix_suggestions": fix,
+                "debug": f"If error empty, Discord returned empty Forbidden - usually means channel is archived thread, or bot is missing SEND_MESSAGES in thread parent, or content blocked by automod. Try simple content 'hello' in different channel."
+            }),400
+
     except Exception as e:
         import traceback
         tb=traceback.format_exc()
-        log_err(f"TEST SEND exception #{chan.name}: {e}")
-        return jsonify({"ok":False,"channel":chan.name,"channel_id":str(chan.id),"perms":perm_info,"error":str(e),"traceback":tb[:800]}),500
+        log_err(f"TEST SEND exception #{chan_info.get('name','?')}: {e} {tb[:800]}")
+        return jsonify({
+            "ok":False,
+            "channel":chan_info.get('name','?'),
+            "channel_id":chan_info.get('id','?'),
+            "chan_info":chan_info,
+            "perms":perm_info,
+            "error": f"{type(e).__name__}: {str(e) or repr(e)}",
+            "traceback": tb[:1200],
+            "fix_suggestions": ["Check bot is still in guild", "Re-invite with Administrator", "Try different channel ID from /api/channels"]
+        }),500
 
 @app.route('/api/action', methods=['POST'])
 def do_action():
