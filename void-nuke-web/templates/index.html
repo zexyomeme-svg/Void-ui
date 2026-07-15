@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VOID-NUKE WEB // Fixed - Permissions + Execution Fix</title>
+<title>VOID-NUKE WEB v5 - Send Messages Fixed + MT</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@500;700&display=swap');
-:root{--bg:#0a0a0a;--card:#141414;--card2:#1a1a1a;--border:#232323;--red:#ff1a1a;--red2:#990000;--red-glow:0 0 20px rgba(255,26,26,.3);--text:#f1f1f1;--dim:#888;--dim2:#555;--green:#00ff88;--yellow:#ffcc00}
+:root{--bg:#0a0a0a;--card:#141414;--card2:#1a1a1a;--border:#232323;--red:#ff1a1a;--red-glow:0 0 20px rgba(255,26,26,.3);--text:#f1f1f1;--dim:#888;--dim2:#555;--green:#00ff88;--yellow:#ffcc00}
 *{box-sizing:border-box;margin:0;padding:0}body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;min-height:100vh;overflow-x:hidden}
 .mono{font-family:'JetBrains Mono',monospace}
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
@@ -16,8 +16,8 @@
 .status-pill{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);padding:6px 12px;border-radius:20px;font-size:12px}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--dim2);animation:pulse 2s infinite}.dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}.dot.off{background:var(--red)}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,255,136,.4)}70%{box-shadow:0 0 0 6px rgba(0,255,136,0)}100%{box-shadow:0 0 0 0 transparent}}
-.wrap{max-width:1500px;margin:0 auto;padding:20px;display:grid;grid-template-columns:340px 1fr;gap:20px}
-@media(max-width:1100px){.wrap{grid-template-columns:1fr}}
+.wrap{max-width:1600px;margin:0 auto;padding:20px;display:grid;grid-template-columns:360px 1fr;gap:20px}
+@media(max-width:1150px){.wrap{grid-template-columns:1fr}}
 .side{display:flex;flex-direction:column;gap:16px}
 .card{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden}
 .card-head{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
@@ -25,26 +25,25 @@
 .card-body{padding:14px}.input{width:100%;background:#0e0e0e;border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-family:'JetBrains Mono';font-size:13px;outline:none;transition:.2s}
 .input:focus{border-color:var(--red);box-shadow:var(--red-glow)}.label{font-size:11px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;display:block}
 .btn{cursor:pointer;border:none;border-radius:6px;padding:10px 16px;font-family:'Space Grotesk';font-weight:700;letter-spacing:.05em;text-transform:uppercase;font-size:12px;transition:.2s;display:inline-flex;align-items:center;justify-content:center;gap:8px}
-.btn-red{background:var(--red);color:#000;box-shadow:var(--red-glow)}.btn-red:hover{background:#ff3333;transform:translateY(-1px)}.btn-red:disabled{opacity:.5;transform:none}
+.btn-red{background:var(--red);color:#000;box-shadow:var(--red-glow)}.btn-red:hover{background:#ff3333;transform:translateY(-1px)}.btn-red:disabled{opacity:.5}
 .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--dim)}.btn-ghost:hover{border-color:var(--red);color:var(--text)}.btn-sm{padding:6px 10px;font-size:11px}.stack{display:flex;flex-direction:column;gap:10px}
 .guild{display:flex;gap:12px;align-items:center;padding:10px;background:var(--card2);border-radius:8px;border:1px solid var(--border)}
-.guild-icon{width:44px;height:44px;border-radius:8px;background:#222;display:grid;place-items:center;font-weight:800;font-size:18px;overflow:hidden}
+.guild-icon{width:44px;height:44px;border-radius:8px;background:#222;display:grid;place-items:center;font-weight:800;font-size:18px}
 .log-wrap{height:300px;overflow:auto;background:#0c0c0c;border:1px solid var(--border);border-radius:8px;padding:10px;font-family:'JetBrains Mono';font-size:12px;line-height:1.6}
 .log-line{display:flex;gap:8px;padding:2px 0;border-bottom:1px dashed #161616}.log-ts{color:var(--dim2);flex-shrink:0}.log-lvl{flex-shrink:0;width:44px;text-align:center;border-radius:3px;font-weight:700;font-size:10px;padding:1px 4px}
 .lvl-OK{background:rgba(255,26,26,.15);color:var(--red);border:1px solid rgba(255,26,26,.3)}.lvl-ERR{background:rgba(255,0,0,.15);color:#ff5555}.lvl-WARN{background:rgba(255,200,0,.12);color:#ffcc00}.lvl-INFO{background:rgba(255,255,255,.06);color:var(--dim)}
 .main{display:flex;flex-direction:column;gap:20px}
 .tabs{display:flex;gap:6px;overflow:auto;padding-bottom:2px;flex-wrap:wrap}.tab{padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);cursor:pointer;white-space:nowrap;transition:.2s}
 .tab.active{background:var(--text);color:#000;border-color:var(--text)}.tab:hover{border-color:var(--red);color:var(--text)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
 .cmd{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;transition:.2s;position:relative;overflow:hidden}
 .cmd:hover{border-color:#333;transform:translateY(-2px)}.cmd.danger{border-left:3px solid var(--red)}
 .cmd-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .cmd-id{font-family:'JetBrains Mono';font-size:11px;background:#111;border:1px solid var(--border);padding:2px 6px;border-radius:4px;color:var(--dim)}.cmd-cat{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim2)}
 .cmd h4{font-size:14px;margin-bottom:4px}.cmd p{font-size:12px;color:var(--dim);line-height:1.4;min-height:36px}.cmd-act{margin-top:12px;display:flex;gap:6px}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:none;place-items:center;z-index:200;padding:20px}
-.modal.open{display:grid}
-.modal-box{background:var(--card);border:1px solid #333;border-radius:12px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.8);max-height:90vh;display:flex;flex-direction:column}
-.modal-head{padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--card);position:sticky;top:0;z-index:1}
+.modal.open{display:grid}.modal-box{background:var(--card);border:1px solid #333;border-radius:12px;width:100%;max-width:500px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.8);max-height:90vh;display:flex;flex-direction:column}
+.modal-head{padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--card)}
 .modal-body{padding:16px;display:flex;flex-direction:column;gap:12px;overflow:auto}
 .check{display:flex;gap:8px;align-items:flex-start;background:rgba(255,26,26,.08);border:1px solid rgba(255,26,26,.2);padding:10px;border-radius:8px;font-size:13px}
 .badge{font-size:10px;background:#111;border:1px solid var(--border);padding:3px 8px;border-radius:20px;color:var(--dim);font-family:'JetBrains Mono'}
@@ -54,20 +53,21 @@
 .perm-left{flex:1}.perm-name{font-size:12px;font-weight:700}.perm-desc{font-size:10px;color:var(--dim);margin-top:2px}.perm-for{font-size:9px;color:var(--dim2);margin-top:2px;font-family:'JetBrains Mono'}
 .perm-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700}
 .has-yes{background:rgba(0,255,136,.15);color:var(--green);border:1px solid rgba(0,255,136,.3)}.has-no{background:rgba(255,0,0,.15);color:var(--red);border:1px solid rgba(255,0,0,.3)}
-.toast{position:fixed;bottom:20px;right:20px;z-index:999;background:var(--card);border:1px solid var(--border);border-left:3px solid var(--red);padding:12px 16px;border-radius:8px;font-size:13px;max-width:400px;box-shadow:0 10px 30px rgba(0,0,0,.5);transform:translateY(100px);opacity:0;transition:.3s}
+.toast{position:fixed;bottom:20px;right:20px;z-index:999;background:var(--card);border:1px solid var(--border);border-left:3px solid var(--red);padding:12px 16px;border-radius:8px;font-size:13px;max-width:420px;box-shadow:0 10px 30px rgba(0,0,0,.5);transform:translateY(100px);opacity:0;transition:.3s}
 .toast.show{transform:translateY(0);opacity:1}.toast.ok{border-left-color:var(--green)}.toast.err{border-left-color:var(--red)}.toast.warn{border-left-color:var(--yellow)}
 .guide{font-size:11px;line-height:1.6;color:var(--dim);background:#0e0e0e;border:1px solid #222;border-radius:8px;padding:12px;margin-top:10px}.guide b{color:var(--text)}.guide a{color:var(--red);text-decoration:none}
-.guide a:hover{text-decoration:underline}
+.chan-item{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:#0f0f0f;border:1px solid #1e1e1e;border-radius:6px;margin-bottom:4px;font-size:11px}
+.chan-ok{color:var(--green)}.chan-no{color:var(--red)}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="logo"><div class="logo-mark">V</div><div><h1>VOID-NUKE WEB</h1><span class="mono">FIXED • PERMISSIONS • 39 CMDS • 512MB OPT</span></div></div>
+  <div class="logo"><div class="logo-mark">V</div><div><h1>VOID-NUKE WEB</h1><span class="mono">v5 • SEND FIXED • MT • PERMS • 39 CMDS</span></div></div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <span class="badge">39/39 CMDS</span>
-    <span class="badge green">EXECUTION FIXED</span>
-    <span class="badge green">audioop-lts</span>
+    <span class="badge green">SEND MESSAGES FIXED</span>
+    <span class="badge">39/39</span>
+    <span class="badge green">MT 4 THREADS</span>
     <div class="status-pill mono"><div class="dot off" id="dot"></div><span id="statusText">DISCONNECTED</span></div>
   </div>
 </div>
@@ -78,23 +78,40 @@
       <div class="card-head"><h3>Connection</h3><span class="badge mono">SECURE</span></div>
       <div class="card-body stack">
         <div><label class="label">Bot Token</label><input id="token" class="input" type="password" placeholder="MTxx..."></div>
-        <div><label class="label">Server ID (Guild ID)</label><input id="guildId" class="input" type="text" placeholder="123456789012345678"></div>
+        <div><label class="label">Server ID</label><input id="guildId" class="input" type="text" placeholder="123456789012345678"></div>
         <button id="btnConnect" class="btn btn-red" style="width:100%">CONNECT BOT</button>
         <button id="btnDisconnect" class="btn btn-ghost" style="width:100%">DISCONNECT</button>
-        <button id="btnTestExec" class="btn btn-ghost" style="width:100%;margin-top:4px">⚡ TEST EXECUTION (Server Info)</button>
-        <div class="mono" style="font-size:10px;color:var(--dim2);line-height:1.4">Educational use only. Token memory-only. All 39 original cmds from v0id4real/Void-Nuke. Fixed execution via /api/action with proper confirm handling.</div>
+        <button id="btnTestExec" class="btn btn-ghost" style="width:100%">⚡ TEST SERVER INFO</button>
+        <div class="mono" style="font-size:10px;color:var(--dim2)">Fixed send: safe_send() with retry, stripped @everyone fallback, rate-limit handling, per-channel perm check.</div>
       </div>
     </div>
 
-    <!-- NEW: Permissions Area -->
+    <!-- NEW: Test Send Panel -->
+    <div class="card" id="testSendCard" style="display:none;border:1px solid rgba(0,255,136,.2)">
+      <div class="card-head"><h3>📤 Test Send Messages</h3><span class="badge green">NEW FIX</span></div>
+      <div class="card-body stack">
+        <div style="font-size:11px;color:var(--dim);background:#0e0e0e;border:1px solid #222;border-radius:6px;padding:8px">This tests if bot can actually send messages. Uses <b>safe_send()</b> with 4 retry attempts (full → stripped @everyone → short → simple). If this fails, check perms below.</div>
+        <div><label class="label">Channel ID (blank = first writable)</label><input id="testChanId" class="input" type="text" placeholder="Leave blank for auto"></div>
+        <div><label class="label">Message to test</label><input id="testContent" class="input" type="text" value="VOID-NUKE ✅ Bot can send messages! Test OK 🚀"></div>
+        <div style="display:flex;gap:6px"><label style="display:flex;gap:6px;align-items:center;font-size:11px"><input type="checkbox" id="testEveryone"> Test @everyone</label></div>
+        <button id="btnTestSend" class="btn btn-red" style="width:100%">📤 SEND TEST MESSAGE</button>
+        <div id="testSendResult" class="mono" style="font-size:11px;background:#0e0e0e;border:1px solid #222;border-radius:6px;padding:8px;display:none"></div>
+        <div style="font-size:10px;color:var(--dim2)" class="mono">If fails: check SEND_MESSAGES, VIEW_CHANNEL, EMBED_LINKS, MENTION_EVERYONE perms in card below & per-channel list.</div>
+      </div>
+    </div>
+
     <div class="card" id="permCard" style="display:none">
-      <div class="card-head"><h3>🔐 Required Permissions</h3><span class="badge green" id="permOverall">CHECKING...</span></div>
+      <div class="card-head"><h3>🔐 Permissions + Message Fix</h3><span class="badge green" id="permOverall">CHECKING</span></div>
       <div class="card-body">
         <div id="permBotInfo" class="mono" style="font-size:11px;background:#0e0e0e;border:1px solid #222;border-radius:6px;padding:8px;margin-bottom:10px"></div>
-        <div style="display:flex;gap:6px;margin-bottom:10px"><span class="badge">Intents</span><span class="badge">Must be ON in Dev Portal</span></div>
+        <div style="display:flex;gap:6px;margin-bottom:8px"><span class="badge">Intents</span><span class="badge">ON required in Dev Portal</span></div>
         <div id="intentList"></div>
-        <div style="display:flex;gap:6px;margin:10px 0 6px 0"><span class="badge red">Permissions</span><span class="badge">Invite with Admin = All ✅</span></div>
-        <div id="permList" style="max-height:340px;overflow:auto"></div>
+        <div style="display:flex;gap:6px;margin:10px 0 6px"><span class="badge red">Critical for SEND</span><span class="badge">Needs ✅ to send</span></div>
+        <div id="criticalPerms"></div>
+        <div style="display:flex;gap:6px;margin:10px 0 6px"><span class="badge">All Permissions</span><span class="badge">Admin = All ✅</span></div>
+        <div id="permList" style="max-height:280px;overflow:auto"></div>
+        <div style="display:flex;gap:6px;margin:10px 0 6px"><span class="badge yellow">Per-Channel Send Check</span><span class="badge">Can bot send in each channel?</span></div>
+        <div id="chanPermList" style="max-height:180px;overflow:auto"></div>
         <div class="guide" id="guideBox"></div>
         <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px" onclick="loadPermissions()">🔄 REFRESH PERMS</button>
       </div>
@@ -105,36 +122,19 @@
       <div class="card-body stack">
         <div class="guild"><div class="guild-icon" id="guildIcon">?</div><div><b id="guildName">-</b><br><small id="guildMeta" class="mono">-</small></div></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" class="mono" id="stats"></div>
-        <div id="chanList" style="max-height:100px;overflow:auto;font-size:11px;background:#0e0e0e;border:1px solid #222;border-radius:6px;padding:6px"></div>
       </div>
     </div>
 
-    <div class="card"><div class="card-head"><h3>Live Logs <span id="logCount" class="badge mono">0</span></h3><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-sm" onclick="clearLogs()">CLEAR</button><button class="btn btn-ghost btn-sm" onclick="pollLogs()">REFRESH</button></div></div><div class="log-wrap" id="logWrap"><div class="mono" style="color:var(--dim2);padding:20px;text-align:center">Connect bot to see logs...</div></div></div>
-
-    <div class="card"><div class="card-head"><h3>Execution Debug</h3><span class="badge green" id="execStatus">READY</span></div>
-      <div class="card-body mono" style="font-size:11px;line-height:1.6;color:var(--dim)">
-        <div>Last Action: <span id="lastAction" style="color:var(--text)">None</span></div>
-        <div>Last Params: <span id="lastParams" style="color:var(--dim)">-</span></div>
-        <div>Last Response: <span id="lastResp" style="color:var(--green)">-</span></div>
-        <div style="margin-top:8px;border-top:1px solid #222;padding-top:8px">
-          <b style="color:var(--text)">If click does nothing:</b><br>
-          1. Check bot CONNECTED (green dot)<br>
-          2. Check permissions card (has ✅)<br>
-          3. Click ⚡ TEST EXECUTION<br>
-          4. Open browser console F12 → check errors<br>
-          5. Check Live Logs for API /action<br>
-        </div>
-      </div>
-    </div>
+    <div class="card"><div class="card-head"><h3>Live Logs <span id="logCount" class="badge mono">0</span></h3><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-sm" onclick="clearLogs()">CLEAR</button><button class="btn btn-ghost btn-sm" onclick="pollLogs()">REFRESH</button></div></div><div class="log-wrap" id="logWrap"><div class="mono" style="color:var(--dim2);padding:20px;text-align:center">Connect to see logs with send diagnostics...</div></div></div>
   </div>
 
   <div class="main">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
       <div class="tabs" id="tabs"></div>
-      <div style="display:flex;gap:6px"><span class="badge mono">CLICK = EXECUTE FIXED</span><span class="badge mono">ALL 39 CMDS</span></div>
+      <div style="display:flex;gap:6px"><span class="badge green">SEND FIXED safe_send()</span><span class="badge mono">39 CMDS MT</span></div>
     </div>
     <div class="grid" id="cmdGrid"></div>
-    <div class="footer"><b>VOID-NUKE v1.0.0 FIXED</b> — Execution bug fixed (confirm bool handling), Permissions panel added, command_runner.py added, all 39 cmds from original github.com/v0id4real/Void-Nuke<br><span style="color:#444">python run.py --cli for CLI, python run.py for Web UI</span></div>
+    <div class="footer"><b>VOID-NUKE v5 SEND FIXED</b> — safe_send() with 4 retries, per-channel perm check, mention_everyone fallback, rate-limit handling, test_send endpoint, multi-threaded<br><span style="color:#444">All original cmds + perms + MT + send guaranteed</span></div>
   </div>
 </div>
 
@@ -142,65 +142,53 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// Debug
-console.log("[VOID-NUKE WEB] Loaded - Execution Fixed Version");
-const CATS = {all:"All (39)", nuke:"💣 Nuke / Raid", mod:"🔨 Moderation", channel:"📁 Channels/Roles/Server", member:"👤 Members / VC", message:"💬 Spam / Messaging", util:"⚙️ Utilities / Info"};
-
-const COMMANDS = [
-  {id:"nuke", num:"01", cat:"nuke", name:"Nuke", desc:"Full nuke: delete ch/roles + create 50 raid + webhook spam. Needs Admin + Manage Ch/Roles/Webhooks.", danger:true, params:[{k:"num_channels", label:"Channels/Roles to create (free safe 30, max 50)", type:"number", def:30}]},
-  {id:"auto_raid", num:"02", cat:"nuke", name:"Auto Raid", desc:"Auto raid from config. Deletes ch, creates raid. Needs Admin.", danger:true, params:[{k:"num_channels", label:"Channels (max 50)", type:"number", def:20},{k:"num_messages", label:"Messages per channel (max 10)", type:"number", def:3}]},
-  {id:"ban_all", num:"03", cat:"mod", name:"Ban All", desc:"Ban all members. Needs Ban Members or Admin. Destructive.", danger:true},
-  {id:"kick_all", num:"04", cat:"mod", name:"Kick All", desc:"Kick all members. Needs Kick Members.", danger:true},
-  {id:"mute_all", num:"05", cat:"mod", name:"Mute All", desc:"Timeout all members. Needs Moderate Members.", params:[{k:"minutes", label:"Minutes", type:"number", def:60}]},
-  {id:"unban_all", num:"06", cat:"mod", name:"Unban All", desc:"Unban all bans. Needs Ban Members."},
-  {id:"delete_channels", num:"07", cat:"channel", name:"Del Channels", desc:"Delete all channels. Needs Manage Channels.", danger:true},
-  {id:"delete_emojis", num:"08", cat:"channel", name:"Del Emojis", desc:"Delete all emojis. Needs Manage Emojis."},
-  {id:"delete_stickers", num:"09", cat:"channel", name:"Del Stickers", desc:"Delete all stickers. Needs Manage Emojis."},
-  {id:"create_channels", num:"10", cat:"channel", name:"Create Channels", desc:"Mass create text/voice channels. Needs Manage Channels.", params:[{k:"quantity", label:"Quantity (max 50)", type:"number", def:10},{k:"type", label:"Type text/voice", type:"select", opts:["text","voice"], def:"text"},{k:"name", label:"Name", type:"text", def:"raid-by-void"}]},
+console.log("[VOID-NUKE v5] Send Fixed + MT");
+const CATS={all:"All (39)", nuke:"💣 Nuke / Raid", mod:"🔨 Moderation", channel:"📁 Channels/Roles", member:"👤 Members / VC", message:"💬 Spam / Messaging", util:"⚙️ Utilities"};
+const COMMANDS=[
+  {id:"nuke", num:"01", cat:"nuke", name:"Nuke", desc:"Full nuke with safe_send() webhook spam. Needs Admin, Manage Ch/Roles, Send, MentionEveryone.", danger:true, params:[{k:"num_channels", label:"Channels (safe 30, max 50)", type:"number", def:30}]},
+  {id:"auto_raid", num:"02", cat:"nuke", name:"Auto Raid", desc:"Auto raid with safe_send(). Needs Admin.", danger:true, params:[{k:"num_channels", label:"Channels max50", type:"number", def:20},{k:"num_messages", label:"Msgs per ch max10", type:"number", def:3}]},
+  {id:"ban_all", num:"03", cat:"mod", name:"Ban All", desc:"Ban all. Needs Ban Members.", danger:true},
+  {id:"kick_all", num:"04", cat:"mod", name:"Kick All", desc:"Kick all. Needs Kick Members.", danger:true},
+  {id:"mute_all", num:"05", cat:"mod", name:"Mute All", desc:"Timeout all. Needs Moderate Members.", params:[{k:"minutes", label:"Minutes", type:"number", def:60}]},
+  {id:"unban_all", num:"06", cat:"mod", name:"Unban All", desc:"Unban all. Needs Ban Members."},
+  {id:"delete_channels", num:"07", cat:"channel", name:"Del Channels", desc:"Delete all. Needs Manage Channels.", danger:true},
+  {id:"delete_emojis", num:"08", cat:"channel", name:"Del Emojis", desc:"Delete emojis. Needs Manage Emojis."},
+  {id:"delete_stickers", num:"09", cat:"channel", name:"Del Stickers", desc:"Delete stickers. Needs Manage Emojis."},
+  {id:"create_channels", num:"10", cat:"channel", name:"Create Channels", desc:"Mass create. Needs Manage Channels.", params:[{k:"quantity", label:"Qty max50", type:"number", def:10},{k:"type", label:"Type", type:"select", opts:["text","voice"], def:"text"},{k:"name", label:"Name", type:"text", def:"raid-by-void"}]},
   {id:"create_roles", num:"11", cat:"channel", name:"Create Roles", desc:"Mass create roles. Needs Manage Roles.", params:[{k:"quantity", label:"Qty", type:"number", def:10},{k:"name", label:"Role name", type:"text", def:"VOID-NUKE"}]},
   {id:"create_cats", num:"12", cat:"channel", name:"Create Cats", desc:"Create categories. Needs Manage Channels.", params:[{k:"quantity", label:"Qty", type:"number", def:5},{k:"name", label:"Name", type:"text", def:"VOID-NUKE"}]},
-  {id:"rename_channels", num:"13", cat:"channel", name:"Rename Channels", desc:"Rename all channels. Needs Manage Channels.", params:[{k:"name", label:"New name", type:"text", def:"raid-by-void"}]},
+  {id:"rename_channels", num:"13", cat:"channel", name:"Rename Channels", desc:"Rename all. Needs Manage Channels.", params:[{k:"name", label:"New name", type:"text", def:"raid-by-void"}]},
   {id:"rename_roles", num:"14", cat:"channel", name:"Rename Roles", desc:"Rename all roles. Needs Manage Roles.", params:[{k:"name", label:"New name", type:"text", def:"VOID-NUKE"}]},
-  {id:"edit_server", num:"15", cat:"channel", name:"Edit Server", desc:"Edit name/desc/icon. Needs Manage Guild.", params:[{k:"name", label:"New server name", type:"text", def:"RAIDED BY VOID-NUKE"},{k:"description", label:"Description", type:"text", def:"t.me/v0idtool · discord.gg/voidv2"},{k:"icon_url", label:"Icon URL (optional)", type:"text", def:""}]},
-  {id:"rename_members", num:"16", cat:"member", name:"Rename Members", desc:"Rename all members nick. Needs Manage Nicknames (high role).", params:[{k:"name", label:"Nickname (32 chars)", type:"text", def:"VOID"}]},
-  {id:"fix_nicks", num:"17", cat:"member", name:"Fix Nicks", desc:"Dehoist nicks starting with special chars. Original 17."},
-  {id:"get_admin", num:"18", cat:"member", name:"Get Admin", desc:"Create admin role + give. Needs Manage Roles + Admin to create admin role.", params:[{k:"user_id", label:"User ID blank=all", type:"text", def:""}]},
-  {id:"impersonate", num:"19", cat:"message", name:"Impersonate", desc:"Send as user via webhook. Needs Manage Webhooks.", params:[{k:"target_id", label:"Target user ID", type:"text", def:""},{k:"message", label:"Message to send", type:"text", def:"Hello"},{k:"channel_id", label:"Channel ID blank=all", type:"text", def:""}]},
-  {id:"ghost_ping", num:"20", cat:"member", name:"Ghost Ping", desc:"Ping each member then delete. Needs Send Messages + Manage Messages."},
-  {id:"strip_roles", num:"21", cat:"member", name:"Remov Roles", desc:"Strip all roles from members. Needs Manage Roles."},
-  {id:"dm_all", num:"22", cat:"message", name:"Message All", desc:"DM all members.", params:[{k:"content", label:"DM content", type:"text", def:"RAID BY VOID-NUKE"}]},
-  {id:"dm_spam_user", num:"23", cat:"message", name:"DM Spam User", desc:"Spam DM specific user.", params:[{k:"user_id", label:"Target ID", type:"text", def:""},{k:"count", label:"Count max 20", type:"number", def:5},{k:"content", label:"Message", type:"text", def:"VOID-NUKE"}]},
-  {id:"webhook_spam", num:"24", cat:"message", name:"Webhook Spam", desc:"Create webhook per channel & spam. Needs Manage Webhooks.", params:[{k:"count", label:"Msgs per webhook (max5)", type:"number", def:2},{k:"content", label:"Content or 'embed'", type:"text", def:"@everyone VOID-NUKE"}]},
-  {id:"server_info", num:"25", cat:"util", name:"Server Info", desc:"Show detailed server info. No perm needed."},
-  {id:"clone_server", num:"26", cat:"util", name:"Clone Server", desc:"Clone structure to JSON."},
-  {id:"webhook_logger", num:"27", cat:"util", name:"Webhook Logs", desc:"Log all msgs to webhook. Needs webhook URL.", params:[{k:"webhook_url", label:"Discord webhook URL", type:"text", def:""}]},
-  {id:"lockdown", num:"28", cat:"util", name:"Lockdown", desc:"Lock all text channels. Needs Manage Channels.", params:[]},
-  {id:"deafen_all", num:"29", cat:"member", name:"Sourdine VC", desc:"Deafen all in voice. Needs Mute Members."},
-  {id:"disconnect_all", num:"30", cat:"member", name:"Kick VC All", desc:"Disconnect all from VC. Needs Move Members."},
-  {id:"mass_move", num:"31", cat:"member", name:"Move All VC", desc:"Move all voice members to target VC. Needs Move Members.", params:[{k:"target_id", label:"Target Voice Channel ID", type:"text", def:""}]},
-  {id:"invite_spam", num:"32", cat:"message", name:"Invite Spam", desc:"Create invite spam. Needs Create Invite.", params:[{k:"count", label:"Qty (max20)", type:"number", def:5}]},
-  {id:"spam", num:"33", cat:"message", name:"Spam", desc:"Spam in all channels. Needs Send Messages.", params:[{k:"count", label:"Msgs per ch max10", type:"number", def:3},{k:"content", label:"Content or 'embed'", type:"text", def:"@everyone RAID BY VOID-NUKE"}]},
-  {id:"thread_spam", num:"34", cat:"message", name:"Thread Spam", desc:"Create threads. Needs Send Messages.", params:[{k:"count", label:"Threads per ch max5", type:"number", def:2},{k:"name", label:"Thread name", type:"text", def:"VOID-NUKE"}]},
-  {id:"reaction_spam", num:"35", cat:"message", name:"Reaction Spam", desc:"Add VOID emoji reactions. Needs Read History + Add Reaction.", params:[{k:"limit", label:"Msgs per ch to react (max20)", type:"number", def:5}]},
-  {id:"vc_spam", num:"36", cat:"member", name:"Voice Spam", desc:"Join/leave VC spam. Voice.", params:[{k:"loops", label:"Cycles per VC max5", type:"number", def:2}]},
-  {id:"spoiler_spam", num:"37", cat:"message", name:"Spoiler Spam", desc:"Send spoiler-wrapped msgs.", params:[{k:"count", label:"Count max10", type:"number", def:2},{k:"content", label:"Content", type:"text", def:"VOID"}]},
-  {id:"poll_spam", num:"38", cat:"message", name:"Poll Spam", desc:"Create poll spam.", params:[{k:"count", label:"Polls per ch max10", type:"number", def:2},{k:"question", label:"Question", type:"text", def:"Join VOID-NUKE"}]},
-  {id:"event_spam", num:"39", cat:"message", name:"Event Spam", desc:"Create scheduled events. Needs Manage Events.", params:[{k:"count", label:"Qty max15", type:"number", def:3},{k:"name", label:"Event name", type:"text", def:"VOID-NUKE TOOLS"},{k:"description", label:"Description", type:"text", def:"RAIDED BY VOID-NUKE"}]},
+  {id:"edit_server", num:"15", cat:"channel", name:"Edit Server", desc:"Edit name/desc/icon. Needs Manage Guild. Icon offloaded to thread.", params:[{k:"name", label:"New name", type:"text", def:"RAIDED BY VOID-NUKE"},{k:"description", label:"Desc", type:"text", def:"t.me/v0idtool"},{k:"icon_url", label:"Icon URL", type:"text", def:""}]},
+  {id:"rename_members", num:"16", cat:"member", name:"Rename Members", desc:"Rename nicks. Needs high role.", params:[{k:"name", label:"Nick", type:"text", def:"VOID"}]},
+  {id:"fix_nicks", num:"17", cat:"member", name:"Fix Nicks", desc:"Dehoist nicks."},
+  {id:"get_admin", num:"18", cat:"member", name:"Get Admin", desc:"Create admin role. Needs Manage Roles.", params:[{k:"user_id", label:"User ID blank=all", type:"text", def:""}]},
+  {id:"impersonate", num:"19", cat:"message", name:"Impersonate", desc:"Send as user via webhook. Needs Manage Webhooks.", params:[{k:"target_id", label:"Target ID", type:"text", def:""},{k:"message", label:"Message", type:"text", def:"Hello"},{k:"channel_id", label:"Channel ID blank=all", type:"text", def:""}]},
+  {id:"ghost_ping", num:"20", cat:"member", name:"Ghost Ping", desc:"Ping then delete. Needs Send + Manage Messages."},
+  {id:"strip_roles", num:"21", cat:"member", name:"Remov Roles", desc:"Strip roles. Needs Manage Roles."},
+  {id:"dm_all", num:"22", cat:"message", name:"Message All", desc:"DM all. safe_send() with retry.", params:[{k:"content", label:"DM content", type:"text", def:"RAID BY VOID-NUKE"}]},
+  {id:"dm_spam_user", num:"23", cat:"message", name:"DM Spam User", desc:"Spam DM user with safe_send().", params:[{k:"user_id", label:"Target ID", type:"text", def:""},{k:"count", label:"Count max30", type:"number", def:5},{k:"content", label:"Message", type:"text", def:"VOID-NUKE"}]},
+  {id:"webhook_spam", num:"24", cat:"message", name:"Webhook Spam", desc:"Webhook spam with safe_send() + cleanup. Needs Manage Webhooks, Send.", params:[{k:"count", label:"Msgs per webhook max10", type:"number", def:2},{k:"content", label:"Content or 'embed'", type:"text", def:"@everyone VOID-NUKE"}]},
+  {id:"server_info", num:"25", cat:"util", name:"Server Info", desc:"Show server info with perms."},
+  {id:"clone_server", num:"26", cat:"util", name:"Clone Server", desc:"Clone to JSON with MT file IO."},
+  {id:"webhook_logger", num:"27", cat:"util", name:"Webhook Logs", desc:"Log msgs to webhook.", params:[{k:"webhook_url", label:"Webhook URL", type:"text", def:""}]},
+  {id:"lockdown", num:"28", cat:"util", name:"Lockdown", desc:"Lock all text channels. Needs Manage Channels."},
+  {id:"deafen_all", num:"29", cat:"member", name:"Sourdine VC", desc:"Deafen all. Needs Mute Members."},
+  {id:"disconnect_all", num:"30", cat:"member", name:"Kick VC All", desc:"Disconnect all VC. Needs Move Members."},
+  {id:"mass_move", num:"31", cat:"member", name:"Move All VC", desc:"Move all VC to target. Needs Move Members.", params:[{k:"target_id", label:"Target Voice Channel ID", type:"text", def:""}]},
+  {id:"invite_spam", num:"32", cat:"message", name:"Invite Spam", desc:"Create invite spam. Needs Create Invite.", params:[{k:"count", label:"Qty max50", type:"number", def:5}]},
+  {id:"spam", num:"33", cat:"message", name:"Spam", desc:"Spam with safe_send() - guaranteed send with retry, stripped @everyone fallback. Needs Send Messages + Mention Everyone.", params:[{k:"count", label:"Msgs per ch max15", type:"number", def:3},{k:"content", label:"Content", type:"text", def:"@everyone RAID BY VOID-NUKE"}]},
+  {id:"thread_spam", num:"34", cat:"message", name:"Thread Spam", desc:"Create threads with safe_send(). Needs Send Messages, Create Threads.", params:[{k:"count", label:"Threads per ch max10", type:"number", def:2},{k:"name", label:"Thread name", type:"text", def:"VOID-NUKE"}]},
+  {id:"reaction_spam", num:"35", cat:"message", name:"Reaction Spam", desc:"Add reactions with MT. Needs Read History, Add Reactions.", params:[{k:"limit", label:"Msgs per ch max50", type:"number", def:5}]},
+  {id:"vc_spam", num:"36", cat:"member", name:"Voice Spam", desc:"Join/leave VC spam. Needs Connect.", params:[{k:"loops", label:"Cycles max10", type:"number", def:2}]},
+  {id:"spoiler_spam", num:"37", cat:"message", name:"Spoiler Spam", desc:"Spoiler with safe_send().", params:[{k:"count", label:"Count max15", type:"number", def:2},{k:"content", label:"Content", type:"text", def:"VOID"}]},
+  {id:"poll_spam", num:"38", cat:"message", name:"Poll Spam", desc:"Poll spam with safe_send().", params:[{k:"count", label:"Polls max15", type:"number", def:2},{k:"question", label:"Question", type:"text", def:"Join VOID-NUKE"}]},
+  {id:"event_spam", num:"39", cat:"message", name:"Event Spam", desc:"Create events. Needs Manage Events.", params:[{k:"count", label:"Qty max20", type:"number", def:3},{k:"name", label:"Name", type:"text", def:"VOID-NUKE"},{k:"description", label:"Desc", type:"text", def:"RAIDED"}]},
 ];
 
 let activeCat="all"; let currentAction=null;
-
-function showToast(msg, type="ok"){
-  const t=document.getElementById('toast');
-  t.className=`toast ${type} show`;
-  t.innerText=msg;
-  setTimeout(()=>{t.className="toast "+type;}, 4000);
-}
-
-function renderTabs(){
-  const el=document.getElementById('tabs');
-  el.innerHTML=Object.entries(CATS).map(([k,v])=>`<div class="tab ${activeCat===k?'active':''}" onclick="setCat('${k}')">${v}</div>`).join('');
-}
+function showToast(msg,type="ok"){const t=document.getElementById('toast'); t.className=`toast ${type} show`; t.innerText=msg; setTimeout(()=>{t.className="toast "+type;}, 4000);}
+function renderTabs(){const el=document.getElementById('tabs'); el.innerHTML=Object.entries(CATS).map(([k,v])=>`<div class="tab ${activeCat===k?'active':''}" onclick="setCat('${k}')">${v}</div>`).join('');}
 function setCat(c){activeCat=c;renderTabs();renderGrid();}
 function renderGrid(){
   const grid=document.getElementById('cmdGrid');
@@ -209,147 +197,92 @@ function renderGrid(){
     <div class="cmd ${cmd.danger?'danger':''}">
       <div class="cmd-top"><span class="cmd-id">#${cmd.num}</span><span class="cmd-cat">${CATS[cmd.cat]}</span></div>
       <h4>${cmd.name}</h4><p>${cmd.desc}</p>
-      <div class="cmd-act">
-        <button class="btn ${cmd.danger?'btn-red':'btn-ghost'} btn-sm" style="flex:1" onclick="openAction('${cmd.id}')" data-testid="run-${cmd.id}">▶ RUN</button>
-        <button class="btn btn-ghost btn-sm" title="Copy ID" onclick="navigator.clipboard.writeText('${cmd.id}');showToast('Copied ${cmd.id}','ok')">ID</button>
-      </div>
+      <div class="cmd-act"><button class="btn ${cmd.danger?'btn-red':'btn-ghost'} btn-sm" style="flex:1" onclick="openAction('${cmd.id}')">▶ RUN FIXED</button></div>
     </div>`).join('');
 }
-
 function openAction(id){
-  console.log("[OPEN] Action", id);
-  const cmd=COMMANDS.find(c=>c.id===id);
-  if(!cmd){showToast("Command not found: "+id,"err"); return;}
+  const cmd=COMMANDS.find(c=>c.id===id); if(!cmd) return;
   currentAction=cmd;
-  document.getElementById('modalTitle').innerText=`#${cmd.num} ${cmd.name}`;
+  document.getElementById('modalTitle').innerText=`#${cmd.num} ${cmd.name} [SEND FIXED]`;
   let html=`<div style="font-size:13px;color:var(--dim)">${cmd.desc}</div>`;
   if(cmd.params && cmd.params.length){
     cmd.params.forEach(p=>{
       if(p.type==='select'){html+=`<div><label class="label">${p.label}</label><select class="input" id="p_${p.k}">${p.opts.map(o=>`<option value="${o}" ${o===p.def?'selected':''}>${o}</option>`).join('')}</select></div>`;}
       else{html+=`<div><label class="label">${p.label}</label><input class="input" id="p_${p.k}" type="${p.type}" value="${String(p.def).replace(/"/g,'&quot;')}"></div>`;}
     });
-  } else {html+=`<div class="mono" style="font-size:11px;color:var(--dim2)">No params needed, uses guild context</div>`;}
-  if(cmd.danger){html+=`<label class="check"><input type="checkbox" id="p_confirm"><span>Confirm <b style="color:var(--red)">destructive</b> - I own server / have permission. Free tier limit 30 ops.</span></label>`;}
-  html+=`<div style="display:flex;gap:8px;margin-top:6px"><button class="btn btn-red" style="flex:1" id="btnExecModal" onclick="execute()">⚡ EXECUTE ${cmd.name}</button><button class="btn btn-ghost" style="flex:1" onclick="closeModal()">CANCEL</button></div><div class="mono" style="font-size:10px;color:var(--dim2);margin-top:8px">Will POST /api/action with action=${cmd.id}. Check console F12 for debug.</div>`;
+  }
+  if(cmd.danger){html+=`<label class="check"><input type="checkbox" id="p_confirm"><span>Confirm destructive - I own server. Send uses safe_send() with retries.</span></label>`;}
+  html+=`<div style="display:flex;gap:8px;margin-top:6px"><button class="btn btn-red" style="flex:1" id="btnExecModal" onclick="execute()">⚡ EXECUTE (safe_send MT)</button><button class="btn btn-ghost" style="flex:1" onclick="closeModal()">CANCEL</button></div><div class="mono" style="font-size:10px;color:var(--dim2);margin-top:8px">Guaranteed send: 4 attempts → full, stripped @everyone, short, simple fallback. Check logs for per-channel result.</div>`;
   document.getElementById('modalBody').innerHTML=html;
   document.getElementById('modal').classList.add('open');
-  // Focus first input
-  setTimeout(()=>{const first=document.querySelector('#modalBody .input'); if(first) first.focus();},100);
 }
 function closeModal(){document.getElementById('modal').classList.remove('open'); currentAction=null;}
-
 async function execute(){
-  console.log("[EXECUTE] Clicked", currentAction);
-  if(!currentAction){showToast("No current action","err"); return;}
+  if(!currentAction) return;
   const params={};
   try{
-    if(currentAction.params){
-      currentAction.params.forEach(p=>{
-        const el=document.getElementById(`p_${p.k}`);
-        if(el){params[p.k]=el.value; console.log(`[PARAM] ${p.k} = ${el.value}`);}
-      });
-    }
-    if(currentAction.danger){
-      const chk=document.getElementById('p_confirm');
-      if(!chk){showToast("Confirm checkbox not found","err"); return;}
-      if(!chk.checked){showToast("Please confirm destructive action","warn"); alert("Please check confirm box"); return;}
-      params.confirm=true;
-      console.log("[CONFIRM] true");
-    }
-  }catch(e){console.error("[EXECUTE] param parse error", e); showToast("Param error: "+e.message,"err"); return;}
-
-  // UI feedback
-  const btn=document.getElementById('btnExecModal');
-  if(btn){btn.disabled=true; btn.innerText="⏳ STARTING...";}
-  document.getElementById('lastAction').innerText=currentAction.id;
-  document.getElementById('lastParams').innerText=JSON.stringify(params).slice(0,80);
-  document.getElementById('lastResp').innerText="sending...";
-  document.getElementById('execStatus').innerText="EXECUTING...";
-  showToast(`Starting ${currentAction.name}...`,"ok");
-  addLogLocal("INFO", `→ User clicked EXECUTE ${currentAction.id} ${JSON.stringify(params)}`);
-
+    if(currentAction.params){currentAction.params.forEach(p=>{const el=document.getElementById(`p_${p.k}`); if(el) params[p.k]=el.value;});}
+    if(currentAction.danger){const chk=document.getElementById('p_confirm'); if(!chk||!chk.checked){showToast("Confirm required","warn"); alert("Check confirm"); return;} params.confirm=true;}
+  }catch(e){showToast("Param error "+e.message,"err"); return;}
+  const btn=document.getElementById('btnExecModal'); if(btn){btn.disabled=true; btn.innerText="⏳ STARTING MT...";}
+  showToast(`Starting ${currentAction.name} with safe_send MT...`,"ok");
+  addLogLocal("INFO", `→ EXECUTE ${currentAction.id} ${JSON.stringify(params)}`);
   try{
-    console.log("[FETCH] POST /api/action", {action:currentAction.id, params});
-    const res=await fetch('/api/action',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:currentAction.id, params})
-    });
-    const text=await res.text();
-    console.log("[FETCH] Response status", res.status, "body", text);
-    let data;
-    try{data=JSON.parse(text);}catch{data={raw:text};}
-    
-    document.getElementById('lastResp').innerText=`${res.status} ${text.slice(0,100)}`;
-    
-    if(!res.ok){
-      const errMsg=data.error||data.raw||`HTTP ${res.status}`;
-      addLogLocal("ERR", `Action failed: ${errMsg}`);
-      showToast(`Failed: ${errMsg}`,"err");
-      alert(`Action failed:\n${errMsg}\n\nCheck Live Logs & Permissions panel.`);
-      if(btn){btn.disabled=false; btn.innerText=`⚡ EXECUTE ${currentAction.name}`;}
-      document.getElementById('execStatus').innerText="FAILED";
-      return;
-    }
-    
-    closeModal();
-    addLogLocal("OK", data.message||`Task ${data.action} started`);
-    showToast(data.message||`Task ${currentAction.name} started! Check logs`,"ok");
-    document.getElementById('execStatus').innerText="OK - CHECK LOGS";
-    document.getElementById('lastResp').innerText=data.message||"OK";
-    
-    // Refresh logs and perms after short delay
-    setTimeout(()=>{pollLogs(); loadPermissions();}, 800);
-    
-  }catch(e){
-    console.error("[FETCH] Error", e);
-    addLogLocal("ERR", `Fetch error: ${e.message}`);
-    showToast(`Error: ${e.message}`,"err");
-    alert(`Execution error: ${e.message}\n\n1. Check bot CONNECTED\n2. Check permissions panel\n3. Check browser console F12\n4. Try TEST EXECUTION button`);
-    document.getElementById('execStatus').innerText="ERROR";
-    document.getElementById('lastResp').innerText=e.message;
-    if(btn){btn.disabled=false; btn.innerText=`⚡ EXECUTE ${currentAction.name}`;}
-  }
+    const res=await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:currentAction.id, params})});
+    const text=await res.text(); let data; try{data=JSON.parse(text)}catch{data={raw:text};}
+    if(!res.ok){addLogLocal("ERR", `Failed: ${data.error||text}`); showToast(`Failed: ${data.error}`,"err"); alert(`Failed: ${data.error}`); if(btn){btn.disabled=false; btn.innerText=`⚡ EXECUTE ${currentAction.name}`;} return;}
+    closeModal(); addLogLocal("OK", data.message); showToast(data.message,"ok"); setTimeout(()=>{pollLogs(); loadPermissions(); loadChannels();},800);
+  }catch(e){addLogLocal("ERR", `Fetch err ${e.message}`); showToast(e.message,"err"); if(btn){btn.disabled=false; btn.innerText=`⚡ EXECUTE ${currentAction.name}`;}}
 }
-
-// Connection
 document.getElementById('btnConnect').onclick=async()=>{
-  const token=document.getElementById('token').value.trim();
-  const guildId=document.getElementById('guildId').value.trim();
-  if(!token||!guildId){showToast("Token + Server ID required","warn"); alert("Token and Server ID required"); return;}
+  const token=document.getElementById('token').value.trim(); const guildId=document.getElementById('guildId').value.trim();
+  if(!token||!guildId){showToast("Token + ID required","warn"); return;}
   const btn=document.getElementById('btnConnect'); btn.disabled=true; btn.innerText="CONNECTING...";
   addLogLocal("INFO","Connecting...");
-  try{
-    const r=await fetch('/api/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token, guild_id:guildId})});
-    const d=await r.json(); console.log("[CONNECT]", d);
-    if(!r.ok) throw new Error(d.error);
-    showToast("Bot thread started, waiting READY...","ok");
-    addLogLocal("INFO","Bot thread started");
-    // Poll status quickly
-    for(let i=0;i<5;i++){await new Promise(res=>setTimeout(res,1000)); await pollStatus(); await loadPermissions(); const dot=document.getElementById('dot'); if(dot.classList.contains('on')) break;}
-  }catch(e){console.error(e); addLogLocal("ERR", e.message); showToast(e.message,"err"); alert(e.message);}
+  try{const r=await fetch('/api/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token, guild_id:guildId})}); const d=await r.json(); if(!r.ok) throw new Error(d.error); showToast("Bot starting...","ok"); for(let i=0;i<5;i++){await new Promise(res=>setTimeout(res,1000)); await pollStatus(); await loadPermissions(); await loadChannels(); if(document.getElementById('dot').classList.contains('on')) break;}}catch(e){addLogLocal("ERR", e.message); showToast(e.message,"err");}
   btn.disabled=false; btn.innerText="CONNECT BOT";
 };
-document.getElementById('btnDisconnect').onclick=async()=>{await fetch('/api/disconnect',{method:'POST'}); addLogLocal("WARN","Disconnected"); showToast("Disconnected","warn"); document.getElementById('permCard').style.display='none';};
+document.getElementById('btnDisconnect').onclick=async()=>{await fetch('/api/disconnect',{method:'POST'}); addLogLocal("WARN","Disconnected"); showToast("Disconnected","warn"); document.getElementById('permCard').style.display='none'; document.getElementById('testSendCard').style.display='none';};
 document.getElementById('btnTestExec').onclick=async()=>{
-  console.log("[TEST EXEC]");
-  if(!document.getElementById('dot').classList.contains('on')){showToast("Connect bot first!","warn"); alert("Connect bot first - dot must be green"); return;}
-  // Directly run server_info
-  currentAction=COMMANDS.find(c=>c.id==='server_info');
-  if(!currentAction){showToast("server_info not found","err"); return;}
-  addLogLocal("INFO","→ TEST EXECUTION server_info");
+  if(!document.getElementById('dot').classList.contains('on')){showToast("Connect first","warn"); return;}
+  const cmd=COMMANDS.find(c=>c.id==='server_info'); currentAction=cmd;
+  try{const res=await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'server_info',params:{}})}); const txt=await res.text(); let data; try{data=JSON.parse(txt)}catch{data={raw:txt};} if(!res.ok) showToast("Test failed "+(data.error||txt),"err"); else{showToast("Test OK - check logs","ok"); addLogLocal("OK","Test OK "+txt.slice(0,120));}}catch(e){showToast("Test err "+e.message,"err");}
+};
+document.getElementById('btnTestSend').onclick=async()=>{
+  const chanId=document.getElementById('testChanId').value.trim();
+  const content=document.getElementById('testContent').value.trim();
+  const everyone=document.getElementById('testEveryone').checked;
+  if(!content){showToast("Content required","warn"); return;}
+  const btn=document.getElementById('btnTestSend'); btn.disabled=true; btn.innerText="⏳ SENDING...";
+  document.getElementById('testSendResult').style.display='block';
+  document.getElementById('testSendResult').innerText='Sending test with safe_send()...';
+  addLogLocal("INFO", `→ TEST SEND to ${chanId||'auto'}: ${content} everyone=${everyone}`);
   try{
-    const res=await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'server_info', params:{}})});
-    const txt=await res.text(); console.log("[TEST] resp", res.status, txt);
-    let data; try{data=JSON.parse(txt)}catch{data={raw:txt};}
-    if(!res.ok){showToast("Test failed: "+(data.error||txt),"err"); alert("Test failed: "+JSON.stringify(data));}
-    else{showToast("Test OK: "+(data.message||"Started")+" - Check logs","ok"); addLogLocal("OK","Test execution OK: "+txt.slice(0,150));}
-  }catch(e){console.error(e); showToast("Test error: "+e.message,"err"); addLogLocal("ERR","Test error: "+e.message);}
+    const res=await fetch('/api/test_send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel_id:chanId, content, everyone})});
+    const txt=await res.text(); let data; try{data=JSON.parse(txt)}catch{data={raw:txt};}
+    const resultEl=document.getElementById('testSendResult');
+    if(!res.ok){
+      resultEl.innerHTML=`<span style="color:var(--red)">❌ FAILED</span><br>Channel: ${data.channel||'unknown'}<br>Error: ${data.error||txt.slice(0,200)}<br><br><b>Perms:</b> ${JSON.stringify(data.perms||{},null,2).slice(0,500)}<br><br><b>Fix:</b> Need VIEW_CHANNEL + SEND_MESSAGES + EMBED_LINKS + MENTION_EVERYONE if @everyone`;
+      resultEl.style.borderColor='var(--red)';
+      addLogLocal("ERR", `Test send failed #{data.channel}: ${data.error}`);
+      showToast("Test send FAILED - check result box + perms","err");
+    } else {
+      resultEl.innerHTML=`<span style="color:var(--green)">✅ SENT OK</span><br>Channel: #${data.channel} (${data.channel_id})<br>Perms: VIEW=${data.perms.view_channel} SEND=${data.perms.send_messages} EMBED=${data.perms.embed_links} EVERYONE=${data.perms.mention_everyone}<br><br>Check Discord - message should be there!`;
+      resultEl.style.borderColor='var(--green)';
+      addLogLocal("OK", `Test send OK in #${data.channel}`);
+      showToast(`Test sent OK in #${data.channel}! Check Discord`,"ok");
+    }
+  }catch(e){
+    document.getElementById('testSendResult').innerText=`Exception: ${e.message}`;
+    showToast("Test exception "+e.message,"err");
+    addLogLocal("ERR", "Test exception "+e.message);
+  }
+  btn.disabled=false; btn.innerText="📤 SEND TEST MESSAGE";
 };
 
 function addLogLocal(lvl,msg){
   const wrap=document.getElementById('logWrap');
-  if(wrap.innerHTML.includes("Connect bot to see logs")) wrap.innerHTML="";
+  if(wrap.innerHTML.includes("Connect to see logs")) wrap.innerHTML="";
   const ts=new Date().toLocaleTimeString();
   const line=document.createElement('div'); line.className='log-line';
   line.innerHTML=`<span class="log-ts">${ts}</span><span class="log-lvl lvl-${lvl}">${lvl}</span><span>${String(msg).replace(/</g,'&lt;')}</span>`;
@@ -357,98 +290,62 @@ function addLogLocal(lvl,msg){
   document.getElementById('logCount').innerText=wrap.children.length;
 }
 async function pollLogs(){
-  try{
-    const r=await fetch('/api/logs?limit=150'); const logs=await r.json();
-    const wrap=document.getElementById('logWrap');
-    if(logs.length){wrap.innerHTML=logs.map(l=>`<div class="log-line"><span class="log-ts">${l.ts}</span><span class="log-lvl lvl-${l.level}">${l.level}</span><span>${l.msg.replace(/</g,'&lt;')}</span></div>`).join(''); wrap.scrollTop=wrap.scrollHeight; document.getElementById('logCount').innerText=logs.length;}
-  }catch(e){console.error("pollLogs", e);}
+  try{const r=await fetch('/api/logs?limit=200'); const logs=await r.json(); const wrap=document.getElementById('logWrap'); if(logs.length){wrap.innerHTML=logs.map(l=>`<div class="log-line"><span class="log-ts">${l.ts}</span><span class="log-lvl lvl-${l.level}">${l.level}</span><span>${l.msg.replace(/</g,'&lt;')}</span></div>`).join(''); wrap.scrollTop=wrap.scrollHeight; document.getElementById('logCount').innerText=logs.length;}}catch{}
 }
 async function pollStatus(){
   try{
     const r=await fetch('/api/status'); const s=await r.json();
-    const dot=document.getElementById('dot'); const txt=document.getElementById('statusText'); const card=document.getElementById('guildCard');
+    const dot=document.getElementById('dot'); const txt=document.getElementById('statusText'); const card=document.getElementById('guildCard'); const testCard=document.getElementById('testSendCard');
     if(s.connected){
-      dot.className='dot on'; txt.innerText=`CONNECTED • ${s.guild.name||'...'}`; card.style.display='block';
+      dot.className='dot on'; txt.innerText=`CONNECTED • ${s.guild.name||'...'}`; card.style.display='block'; testCard.style.display='block';
       if(s.guild && s.guild.name){
         document.getElementById('guildName').innerText=s.guild.name;
-        document.getElementById('guildMeta').innerText=`${s.guild.members} m • ${s.guild.channels} ch • ${s.guild.roles} roles • Py${s.python}`;
+        document.getElementById('guildMeta').innerText=`${s.guild.members} m • ${s.guild.channels} ch • ${s.guild.roles} roles`;
         document.getElementById('guildIcon').innerText=s.guild.name[0]?.toUpperCase()||'?';
         document.getElementById('stats').innerHTML=`<div style="background:#0e0e0e;border:1px solid #222;border-radius:6px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700">${s.guild.members}</div><div style="font-size:10px;color:#666">MEMBERS</div></div><div style="background:#0e0e0e;border:1px solid #222;border-radius:6px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700">${s.guild.channels}</div><div style="font-size:10px;color:#666">CHANNELS</div></div>`;
-        document.getElementById('permCard').style.display='block';
-        try{
-          const cr=await fetch('/api/channels'); const cd=await cr.json();
-          if(cd.text){document.getElementById('chanList').innerHTML=`<b>Text:</b> ${cd.text.slice(0,8).map(c=>c.name).join(', ')}${cd.text.length>8?' ...':''}<br><b>Voice:</b> ${cd.voice.slice(0,4).map(c=>c.name).join(', ')}`;}
-        }catch{}
       }
-    }else{dot.className='dot off'; txt.innerText='DISCONNECTED'; if(!s.guild || !Object.keys(s.guild).length) document.getElementById('guildCard').style.display='none';}
-  }catch(e){console.error("status", e);}
+    }else{dot.className='dot off'; txt.innerText='DISCONNECTED';}
+  }catch{}
 }
-async function clearLogs(){await fetch('/api/logs/clear',{method:'POST'}); document.getElementById('logWrap').innerHTML='<div class="mono" style="color:var(--dim2);padding:20px;text-align:center">Cleared</div>'; document.getElementById('logCount').innerText='0';}
-async function loadGuilds(){try{const r=await fetch('/api/guilds'); const d=await r.json(); if(Array.isArray(d)){addLogLocal("INFO", `Bot in ${d.length}: ${d.map(g=>g.name).join(', ')}`); showToast(`Bot in ${d.length} guilds`,"ok");}}catch(e){addLogLocal("ERR", e.message); showToast(e.message,"err");}}
+async function clearLogs(){await fetch('/api/logs/clear',{method:'POST'}); document.getElementById('logWrap').innerHTML='<div class="mono" style="color:var(--dim2);padding:20px;text-align:center">Cleared</div>';}
+async function loadGuilds(){try{const r=await fetch('/api/guilds'); const d=await r.json(); if(Array.isArray(d)){addLogLocal("INFO", `Bot in ${d.length}: ${d.map(g=>g.name).join(', ')}`);}}catch(e){addLogLocal("ERR", e.message);}}
+async function loadChannels(){
+  try{
+    const r=await fetch('/api/channels'); const data=await r.json();
+    if(data.text){
+      const chanPermList=document.getElementById('chanPermList');
+      if(chanPermList){
+        chanPermList.innerHTML=data.text.map(c=>`<div class="chan-item"><span>#${c.name.slice(0,20)} (${c.id.slice(-4)})</span><span class="${c.can_send?'chan-ok':'chan-no'}">${c.can_send?'✅ can send':'❌ NO SEND - '+c.send_reason}</span></div>`).join('')+data.voice.slice(0,3).map(c=>`<div class="chan-item"><span>🔊 ${c.name.slice(0,20)}</span><span class="${c.can_send?'chan-ok':'chan-no'}">${c.can_send?'✅':'❌'}</span></div>`).join('');
+      }
+    }
+  }catch(e){console.error(e);}
+}
 async function loadPermissions(){
   try{
-    const r=await fetch('/api/permissions');
-    const data=await r.json();
+    const r=await fetch('/api/permissions'); const data=await r.json();
     const card=document.getElementById('permCard');
-    if(!r.ok){
-      console.log("[PERMS] not ready", data);
-      card.style.display='none';
-      return;
-    }
+    if(!r.ok){card.style.display='none'; return;}
     card.style.display='block';
-    const check=data.permissions_check;
-    const guide=data.guide;
+    const check=data.permissions_check; const guide=data.guide;
     const overall=document.getElementById('permOverall');
     const botInfo=document.getElementById('permBotInfo');
-    
-    botInfo.innerHTML=`Bot: ${check.bot_name}<br>ID: ${check.bot_id}<br>Top Role: ${check.top_role} (pos ${check.top_role_pos})<br>Admin: ${check.is_admin?'YES ✅':'NO ❌'}<br>All OK: ${check.all_ok?'YES ✅':'NO ❌'}`;
-    overall.innerText=check.all_ok?'ALL OK ✅':'MISSING ❌';
-    overall.className=`badge ${check.all_ok?'green':'red'}`;
-    
-    // Intents
+    botInfo.innerHTML=`Bot: ${check.bot_name}<br>ID: ${check.bot_id}<br>Top Role: ${check.top_role} pos ${check.top_role_pos}<br>Admin: ${check.is_admin?'YES ✅':'NO ❌'}<br>All OK: ${check.all_ok?'YES ✅':'NO ❌'} | Send Critical: must have SEND + VIEW + EMBED + MENTION`;
+    overall.innerText=check.all_ok?'ALL OK ✅':'MISSING ❌'; overall.className=`badge ${check.all_ok?'green':'red'}`;
+    const criticalKeys=["send_messages","view_channel","embed_links","mention_everyone","manage_channels","manage_roles"];
     const intentList=document.getElementById('intentList');
-    intentList.innerHTML=Object.entries(check.intents).map(([k,v])=>`
-      <div class="perm-item">
-        <div class="perm-left"><div class="perm-name">${v.name}</div><div class="perm-desc">${v.desc}</div></div>
-        <div class="perm-badge ${v.has?'has-yes':'has-no'}">${v.has?'ON ✅':'OFF ❌'}</div>
-      </div>`).join('');
-    
-    // Permissions
+    intentList.innerHTML=Object.entries(check.intents).map(([k,v])=>`<div class="perm-item"><div class="perm-left"><div class="perm-name">${v.name}</div><div class="perm-desc">${v.desc}</div></div><div class="perm-badge ${v.has?'has-yes':'has-no'}">${v.has?'ON ✅':'OFF ❌'}</div></div>`).join('');
+    const criticalPerms=document.getElementById('criticalPerms');
+    criticalPerms.innerHTML=criticalKeys.map(k=>{const v=check.permissions[k]; if(!v) return ''; return `<div class="perm-item" style="border-color:${v.has?'rgba(0,255,136,.3)':'rgba(255,0,0,.4)'}"><div class="perm-left"><div class="perm-name">🔴 ${v.name}</div><div class="perm-desc">${v.desc}</div><div class="perm-for">For: ${v.needed_for.join(', ')}</div></div><div class="perm-badge ${v.has?'has-yes':'has-no'}">${v.has?'YES ✅':'NO ❌ MUST FIX'}</div></div>`;}).join('');
     const permList=document.getElementById('permList');
-    permList.innerHTML=Object.entries(check.permissions).map(([k,v])=>`
-      <div class="perm-item">
-        <div class="perm-left"><div class="perm-name">${v.name}</div><div class="perm-desc">${v.desc}</div><div class="perm-for">For: ${v.needed_for.join(', ')}</div></div>
-        <div class="perm-badge ${v.has?'has-yes':'has-no'}">${v.has?'YES ✅':'NO ❌'}</div>
-      </div>`).join('');
-    
-    // Guide
+    permList.innerHTML=Object.entries(check.permissions).map(([k,v])=>`<div class="perm-item"><div class="perm-left"><div class="perm-name">${v.name}</div><div class="perm-desc">${v.desc}</div><div class="perm-for">${v.needed_for.join(', ')}</div></div><div class="perm-badge ${v.has?'has-yes':'has-no'}">${v.has?'YES ✅':'NO ❌'}</div></div>`).join('');
     const guideBox=document.getElementById('guideBox');
-    guideBox.innerHTML=`
-      <b>📖 How to Enable Missing Permissions:</b><br>
-      ${guide.steps.map(s=>`• ${s}<br>`).join('')}
-      <br><b>🔧 Current Diagnostics:</b><br>
-      Top Role: ${guide.diagnostics?.bot_top_role||check.top_role} (pos ${guide.diagnostics?.bot_top_role_pos||check.top_role_pos}) - Must be HIGHER than target roles<br>
-      Is Owner: ${guide.diagnostics?.is_owner?'Yes (owner bypasses some perms)':'No'}<br>
-      <br><b>⚠️ If perms show ❌:</b><br>
-      1. Re-invite bot with Admin: <a href="https://discord.com/developers/applications" target="_blank">Dev Portal</a><br>
-      2. Use URL: <span class="mono" style="background:#111;padding:2px 4px;border-radius:3px">https://discord.com/oauth2/authorize?client_id=${check.bot_id}&permissions=8&scope=bot</span><br>
-      3. In Server → Roles, drag bot role to TOP above other roles<br>
-      4. Enable Intents in Dev Portal → Bot → Privileged Intents<br>
-    `;
-    
-  }catch(e){console.error("perms", e);}
+    guideBox.innerHTML=`<b>📖 Fix Missing Perms for SEND:</b><br>${guide.steps.map(s=>`• ${s}<br>`).join('')}<br><b>Critical for messages:</b> SEND_MESSAGES + VIEW_CHANNEL + EMBED_LINKS must be ✅<br>If @everyone fails: need MENTION_EVERYONE perm or use without @everyone (safe_send strips it on retry)<br><br>Invite: <a href="https://discord.com/developers/applications" target="_blank">Dev Portal</a> → OAuth2 → URL with 8 (Admin)<br><span class="mono" style="background:#111;padding:2px 4px">https://discord.com/oauth2/authorize?client_id=${check.bot_id}&permissions=8&scope=bot</span>`;
+  }catch(e){console.error(e);}
 }
-
-setInterval(pollLogs,2000);
-setInterval(pollStatus,2500);
-setInterval(loadPermissions,5000);
-pollLogs(); pollStatus(); loadPermissions(); renderTabs(); renderGrid();
-
-// Close modal on outside click
+setInterval(pollLogs,2000); setInterval(pollStatus,2500); setInterval(loadPermissions,6000); setInterval(loadChannels,7000);
+pollLogs(); pollStatus(); loadPermissions(); loadChannels(); renderTabs(); renderGrid();
 document.getElementById('modal').addEventListener('click', (e)=>{if(e.target.id==='modal') closeModal();});
 document.addEventListener('keydown', (e)=>{if(e.key==='Escape') closeModal();});
-
-console.log("[VOID-NUKE] JS Ready - If RUN does nothing, check console & use TEST EXECUTION button");
 </script>
 </body>
 </html>
