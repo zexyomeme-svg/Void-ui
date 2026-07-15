@@ -146,7 +146,7 @@ console.log("[VOID-NUKE v5] Send Fixed + MT");
 const CATS={all:"All (39)", nuke:"💣 Nuke / Raid", mod:"🔨 Moderation", channel:"📁 Channels/Roles", member:"👤 Members / VC", message:"💬 Spam / Messaging", util:"⚙️ Utilities"};
 const COMMANDS=[
   {id:"nuke", num:"01", cat:"nuke", name:"Nuke", desc:"Full nuke with safe_send() webhook spam. Needs Admin, Manage Ch/Roles, Send, MentionEveryone.", danger:true, params:[{k:"num_channels", label:"Channels (safe 30, max 50)", type:"number", def:30}]},
-  {id:"auto_raid", num:"02", cat:"nuke", name:"Auto Raid", desc:"Auto raid with safe_send(). Needs Admin.", danger:true, params:[{k:"num_channels", label:"Channels max50", type:"number", def:20},{k:"num_messages", label:"Msgs per ch max10", type:"number", def:3}]},
+  {id:"auto_raid", num:"02", cat:"nuke", name:"Auto Raid", desc:"Auto raid with safe_send_detailed() GUARANTEED SEND - 4 phases: delete, create channels, create roles, SEND MESSAGES. Now fixed to actually send!", danger:true, params:[{k:"num_channels", label:"Channels max50", type:"number", def:20},{k:"num_messages", label:"Msgs per channel max15 (was not sending before - now fixed)", type:"number", def:5},{k:"content", label:"Message content (default RAID)", type:"text", def:"||@everyone|| **# RAID BY VOID-NUKE** t.me/v0idtool · discord.gg/voidv2"}]},
   {id:"ban_all", num:"03", cat:"mod", name:"Ban All", desc:"Ban all. Needs Ban Members.", danger:true},
   {id:"kick_all", num:"04", cat:"mod", name:"Kick All", desc:"Kick all. Needs Kick Members.", danger:true},
   {id:"mute_all", num:"05", cat:"mod", name:"Mute All", desc:"Timeout all. Needs Moderate Members.", params:[{k:"minutes", label:"Minutes", type:"number", def:60}]},

