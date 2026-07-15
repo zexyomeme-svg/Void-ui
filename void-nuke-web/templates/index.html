@@ -3,88 +3,71 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VOID-NUKE WEB // Fixed - All 39 Commands</title>
+<title>VOID-NUKE WEB // Fixed - Permissions + Execution Fix</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@500;700&display=swap');
-:root{
-  --bg:#0a0a0a;--card:#141414;--card2:#1a1a1a;--border:#252525;
-  --red:#ff1a1a;--red2:#b30000;--red-glow:0 0 20px rgba(255,26,26,.3);
-  --text:#f5f5f5;--dim:#888;--dim2:#555;--green:#00ff88;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;min-height:100vh;overflow-x:hidden}
+:root{--bg:#0a0a0a;--card:#141414;--card2:#1a1a1a;--border:#232323;--red:#ff1a1a;--red2:#990000;--red-glow:0 0 20px rgba(255,26,26,.3);--text:#f1f1f1;--dim:#888;--dim2:#555;--green:#00ff88;--yellow:#ffcc00}
+*{box-sizing:border-box;margin:0;padding:0}body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;min-height:100vh;overflow-x:hidden}
 .mono{font-family:'JetBrains Mono',monospace}
-::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:var(--red2)}
-.header{border-bottom:1px solid var(--border);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:rgba(10,10,10,.9);backdrop-filter:blur(12px);z-index:100}
-.logo{display:flex;align-items:center;gap:12px}
-.logo-mark{width:36px;height:36px;background:var(--red);color:#000;display:grid;place-items:center;font-weight:900;border-radius:4px;box-shadow:var(--red-glow);font-family:'JetBrains Mono';}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.header{border-bottom:1px solid var(--border);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:rgba(10,10,10,.92);backdrop-filter:blur(12px);z-index:100}
+.logo{display:flex;align-items:center;gap:12px}.logo-mark{width:36px;height:36px;background:var(--red);color:#000;display:grid;place-items:center;font-weight:900;border-radius:4px;box-shadow:var(--red-glow);font-family:'JetBrains Mono';}
 .logo h1{font-size:18px;letter-spacing:.08em}.logo span{color:var(--dim);font-size:11px;letter-spacing:.2em;display:block}
 .status-pill{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);padding:6px 12px;border-radius:20px;font-size:12px}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--dim2);animation:pulse 2s infinite}
-.dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}.dot.off{background:var(--red)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--dim2);animation:pulse 2s infinite}.dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}.dot.off{background:var(--red)}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,255,136,.4)}70%{box-shadow:0 0 0 6px rgba(0,255,136,0)}100%{box-shadow:0 0 0 0 transparent}}
-.wrap{max-width:1400px;margin:0 auto;padding:20px;display:grid;grid-template-columns:320px 1fr;gap:20px}
-@media(max-width:1000px){.wrap{grid-template-columns:1fr}}
-.side{display:flex;flex-direction:column;gap:16px;position:sticky;top:78px;height:fit-content}
+.wrap{max-width:1500px;margin:0 auto;padding:20px;display:grid;grid-template-columns:340px 1fr;gap:20px}
+@media(max-width:1100px){.wrap{grid-template-columns:1fr}}
+.side{display:flex;flex-direction:column;gap:16px}
 .card{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden}
 .card-head{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 .card-head h3{font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim)}
-.card-body{padding:14px}
-.input{width:100%;background:#0e0e0e;border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-family:'JetBrains Mono';font-size:13px;outline:none;transition:.2s}
-.input:focus{border-color:var(--red);box-shadow:var(--red-glow)}
-.label{font-size:11px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;display:block}
+.card-body{padding:14px}.input{width:100%;background:#0e0e0e;border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-family:'JetBrains Mono';font-size:13px;outline:none;transition:.2s}
+.input:focus{border-color:var(--red);box-shadow:var(--red-glow)}.label{font-size:11px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;display:block}
 .btn{cursor:pointer;border:none;border-radius:6px;padding:10px 16px;font-family:'Space Grotesk';font-weight:700;letter-spacing:.05em;text-transform:uppercase;font-size:12px;transition:.2s;display:inline-flex;align-items:center;justify-content:center;gap:8px}
-.btn-red{background:var(--red);color:#000;box-shadow:var(--red-glow)}.btn-red:hover{background:#ff3333;transform:translateY(-1px)}
-.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--dim)}.btn-ghost:hover{border-color:var(--red);color:var(--text)}
-.btn-sm{padding:6px 10px;font-size:11px}.btn:disabled{opacity:.4;cursor:not-allowed}.stack{display:flex;flex-direction:column;gap:10px}
+.btn-red{background:var(--red);color:#000;box-shadow:var(--red-glow)}.btn-red:hover{background:#ff3333;transform:translateY(-1px)}.btn-red:disabled{opacity:.5;transform:none}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--dim)}.btn-ghost:hover{border-color:var(--red);color:var(--text)}.btn-sm{padding:6px 10px;font-size:11px}.stack{display:flex;flex-direction:column;gap:10px}
 .guild{display:flex;gap:12px;align-items:center;padding:10px;background:var(--card2);border-radius:8px;border:1px solid var(--border)}
 .guild-icon{width:44px;height:44px;border-radius:8px;background:#222;display:grid;place-items:center;font-weight:800;font-size:18px;overflow:hidden}
-.guild b{font-size:14px}.guild small{color:var(--dim);font-size:12px;font-family:'JetBrains Mono'}
-.log-wrap{height:320px;overflow:auto;background:#0c0c0c;border:1px solid var(--border);border-radius:8px;padding:10px;font-family:'JetBrains Mono';font-size:12px;line-height:1.6}
-.log-line{display:flex;gap:8px;padding:2px 0;border-bottom:1px dashed #161616}
-.log-ts{color:var(--dim2);flex-shrink:0}.log-lvl{flex-shrink:0;width:44px;text-align:center;border-radius:3px;font-weight:700;font-size:10px;padding:1px 4px}
-.lvl-OK{background:rgba(255,26,26,.15);color:var(--red);border:1px solid rgba(255,26,26,.3)}
-.lvl-ERR{background:rgba(255,0,0,.15);color:#ff5555}.lvl-WARN{background:rgba(255,200,0,.12);color:#ffcc00}.lvl-INFO{background:rgba(255,255,255,.06);color:var(--dim)}
+.log-wrap{height:300px;overflow:auto;background:#0c0c0c;border:1px solid var(--border);border-radius:8px;padding:10px;font-family:'JetBrains Mono';font-size:12px;line-height:1.6}
+.log-line{display:flex;gap:8px;padding:2px 0;border-bottom:1px dashed #161616}.log-ts{color:var(--dim2);flex-shrink:0}.log-lvl{flex-shrink:0;width:44px;text-align:center;border-radius:3px;font-weight:700;font-size:10px;padding:1px 4px}
+.lvl-OK{background:rgba(255,26,26,.15);color:var(--red);border:1px solid rgba(255,26,26,.3)}.lvl-ERR{background:rgba(255,0,0,.15);color:#ff5555}.lvl-WARN{background:rgba(255,200,0,.12);color:#ffcc00}.lvl-INFO{background:rgba(255,255,255,.06);color:var(--dim)}
 .main{display:flex;flex-direction:column;gap:20px}
-.tabs{display:flex;gap:6px;overflow:auto;padding-bottom:2px;flex-wrap:wrap}
-.tab{padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);cursor:pointer;white-space:nowrap;transition:.2s}
+.tabs{display:flex;gap:6px;overflow:auto;padding-bottom:2px;flex-wrap:wrap}.tab{padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);cursor:pointer;white-space:nowrap;transition:.2s}
 .tab.active{background:var(--text);color:#000;border-color:var(--text)}.tab:hover{border-color:var(--red);color:var(--text)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
 .cmd{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;transition:.2s;position:relative;overflow:hidden}
 .cmd:hover{border-color:#333;transform:translateY(-2px)}.cmd.danger{border-left:3px solid var(--red)}
-.cmd::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--red),transparent);opacity:0;transition:.3s}
-.cmd:hover::before{opacity:1}
 .cmd-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.cmd-id{font-family:'JetBrains Mono';font-size:11px;background:#111;border:1px solid var(--border);padding:2px 6px;border-radius:4px;color:var(--dim)}
-.cmd-cat{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim2)}
-.cmd h4{font-size:14px;margin-bottom:4px}.cmd p{font-size:12px;color:var(--dim);line-height:1.4;min-height:36px}
-.cmd-act{margin-top:12px;display:flex;gap:6px}
+.cmd-id{font-family:'JetBrains Mono';font-size:11px;background:#111;border:1px solid var(--border);padding:2px 6px;border-radius:4px;color:var(--dim)}.cmd-cat{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim2)}
+.cmd h4{font-size:14px;margin-bottom:4px}.cmd p{font-size:12px;color:var(--dim);line-height:1.4;min-height:36px}.cmd-act{margin-top:12px;display:flex;gap:6px}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:none;place-items:center;z-index:200;padding:20px}
 .modal.open{display:grid}
-.modal-box{background:var(--card);border:1px solid #333;border-radius:12px;width:100%;max-width:460px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.8);max-height:90vh;overflow-y:auto}
-.modal-head{padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--card);z-index:1}
-.modal-head h3{font-size:14px}.modal-body{padding:16px;display:flex;flex-direction:column;gap:12px}
+.modal-box{background:var(--card);border:1px solid #333;border-radius:12px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.8);max-height:90vh;display:flex;flex-direction:column}
+.modal-head{padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--card);position:sticky;top:0;z-index:1}
+.modal-body{padding:16px;display:flex;flex-direction:column;gap:12px;overflow:auto}
 .check{display:flex;gap:8px;align-items:flex-start;background:rgba(255,26,26,.08);border:1px solid rgba(255,26,26,.2);padding:10px;border-radius:8px;font-size:13px}
-.check input{margin-top:2px}
-.footer{text-align:center;padding:20px;color:var(--dim2);font-size:11px;letter-spacing:.1em;border-top:1px solid var(--border);margin-top:40px;font-family:'JetBrains Mono'}
-.footer b{color:var(--red)}
 .badge{font-size:10px;background:#111;border:1px solid var(--border);padding:3px 8px;border-radius:20px;color:var(--dim);font-family:'JetBrains Mono'}
-.badge.green{color:var(--green);border-color:rgba(0,255,136,.2);background:rgba(0,255,136,.08)}
+.badge.green{color:var(--green);border-color:rgba(0,255,136,.2);background:rgba(0,255,136,.08)}.badge.red{color:var(--red);border-color:rgba(255,26,26,.3);background:rgba(255,26,26,.1)}.badge.yellow{color:var(--yellow);border-color:rgba(255,204,0,.3);background:rgba(255,204,0,.1)}
+.footer{text-align:center;padding:20px;color:var(--dim2);font-size:11px;letter-spacing:.1em;border-top:1px solid var(--border);margin-top:40px;font-family:'JetBrains Mono'}.footer b{color:var(--red)}
+.perm-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#0f0f0f;border:1px solid #1e1e1e;border-radius:6px;margin-bottom:6px}
+.perm-left{flex:1}.perm-name{font-size:12px;font-weight:700}.perm-desc{font-size:10px;color:var(--dim);margin-top:2px}.perm-for{font-size:9px;color:var(--dim2);margin-top:2px;font-family:'JetBrains Mono'}
+.perm-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700}
+.has-yes{background:rgba(0,255,136,.15);color:var(--green);border:1px solid rgba(0,255,136,.3)}.has-no{background:rgba(255,0,0,.15);color:var(--red);border:1px solid rgba(255,0,0,.3)}
+.toast{position:fixed;bottom:20px;right:20px;z-index:999;background:var(--card);border:1px solid var(--border);border-left:3px solid var(--red);padding:12px 16px;border-radius:8px;font-size:13px;max-width:400px;box-shadow:0 10px 30px rgba(0,0,0,.5);transform:translateY(100px);opacity:0;transition:.3s}
+.toast.show{transform:translateY(0);opacity:1}.toast.ok{border-left-color:var(--green)}.toast.err{border-left-color:var(--red)}.toast.warn{border-left-color:var(--yellow)}
+.guide{font-size:11px;line-height:1.6;color:var(--dim);background:#0e0e0e;border:1px solid #222;border-radius:8px;padding:12px;margin-top:10px}.guide b{color:var(--text)}.guide a{color:var(--red);text-decoration:none}
+.guide a:hover{text-decoration:underline}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="logo">
-    <div class="logo-mark">V</div>
-    <div><h1>VOID-NUKE WEB</h1><span class="mono">v1.0.0 • FIXED • ALL 39 COMMANDS • 512MB OPT</span></div>
-  </div>
+  <div class="logo"><div class="logo-mark">V</div><div><h1>VOID-NUKE WEB</h1><span class="mono">FIXED • PERMISSIONS • 39 CMDS • 512MB OPT</span></div></div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <span class="badge">PYTHON 3.11/3.13</span>
-    <span class="badge green">audioop-lts FIX</span>
-    <span class="badge">512MB / 0.1 CPU</span>
+    <span class="badge">39/39 CMDS</span>
+    <span class="badge green">EXECUTION FIXED</span>
+    <span class="badge green">audioop-lts</span>
     <div class="status-pill mono"><div class="dot off" id="dot"></div><span id="statusText">DISCONNECTED</span></div>
   </div>
 </div>
@@ -98,31 +81,49 @@ body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-ser
         <div><label class="label">Server ID (Guild ID)</label><input id="guildId" class="input" type="text" placeholder="123456789012345678"></div>
         <button id="btnConnect" class="btn btn-red" style="width:100%">CONNECT BOT</button>
         <button id="btnDisconnect" class="btn btn-ghost" style="width:100%">DISCONNECT</button>
-        <div style="font-size:11px;color:var(--dim2);line-height:1.4" class="mono">
-          ⚠️ Edu only. Own servers. Token memory-only. All 39 original cmds.
-          <br>Fix: audioop-lts shim for Python 3.13 in run.py/app.py/bot_manager.py
-        </div>
+        <button id="btnTestExec" class="btn btn-ghost" style="width:100%;margin-top:4px">⚡ TEST EXECUTION (Server Info)</button>
+        <div class="mono" style="font-size:10px;color:var(--dim2);line-height:1.4">Educational use only. Token memory-only. All 39 original cmds from v0id4real/Void-Nuke. Fixed execution via /api/action with proper confirm handling.</div>
       </div>
     </div>
+
+    <!-- NEW: Permissions Area -->
+    <div class="card" id="permCard" style="display:none">
+      <div class="card-head"><h3>🔐 Required Permissions</h3><span class="badge green" id="permOverall">CHECKING...</span></div>
+      <div class="card-body">
+        <div id="permBotInfo" class="mono" style="font-size:11px;background:#0e0e0e;border:1px solid #222;border-radius:6px;padding:8px;margin-bottom:10px"></div>
+        <div style="display:flex;gap:6px;margin-bottom:10px"><span class="badge">Intents</span><span class="badge">Must be ON in Dev Portal</span></div>
+        <div id="intentList"></div>
+        <div style="display:flex;gap:6px;margin:10px 0 6px 0"><span class="badge red">Permissions</span><span class="badge">Invite with Admin = All ✅</span></div>
+        <div id="permList" style="max-height:340px;overflow:auto"></div>
+        <div class="guide" id="guideBox"></div>
+        <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px" onclick="loadPermissions()">🔄 REFRESH PERMS</button>
+      </div>
+    </div>
+
     <div class="card" id="guildCard" style="display:none">
       <div class="card-head"><h3>Server Info</h3><button class="btn btn-ghost btn-sm" onclick="loadGuilds()">GUILDS</button></div>
       <div class="card-body stack">
         <div class="guild"><div class="guild-icon" id="guildIcon">?</div><div><b id="guildName">-</b><br><small id="guildMeta" class="mono">-</small></div></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" class="mono" id="stats"></div>
-        <div id="chanList" style="max-height:120px;overflow:auto;font-size:11px;background:#0e0e0e;border:1px solid #222;border-radius:6px;padding:6px"></div>
+        <div id="chanList" style="max-height:100px;overflow:auto;font-size:11px;background:#0e0e0e;border:1px solid #222;border-radius:6px;padding:6px"></div>
       </div>
     </div>
-    <div class="card"><div class="card-head"><h3>Live Logs <span id="logCount" class="badge mono">0</span></h3><button class="btn btn-ghost btn-sm" onclick="clearLogs()">CLEAR</button></div><div class="log-wrap" id="logWrap"></div></div>
-    <div class="card"><div class="card-head"><h3>Fixes Applied</h3><span class="badge green">VERIFIED</span></div>
-      <div class="card-body mono" style="font-size:11px;line-height:1.7;color:var(--dim)">
-        <div>✔ audioop-lts 0.2.1 + shim in all files</div>
-        <div>✔ PYTHON_VERSION 3.11.9 in render.yaml</div>
-        <div>✔ All 39 original commands implemented</div>
-        <div>✔ Added: fix_nicks, impersonate, ghost_ping</div>
-        <div>✔ Added: webhook_logs, reaction, vc_spam, poll_spam</div>
-        <div>✔ Semaphore 3 + chunk 8 + GC</div>
-        <div>✔ Embed config, Pub, Raid, Presence same as original</div>
-        <div style="margin-top:6px;color:var(--green)">→ Run: python run.py --fix to verify</div>
+
+    <div class="card"><div class="card-head"><h3>Live Logs <span id="logCount" class="badge mono">0</span></h3><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-sm" onclick="clearLogs()">CLEAR</button><button class="btn btn-ghost btn-sm" onclick="pollLogs()">REFRESH</button></div></div><div class="log-wrap" id="logWrap"><div class="mono" style="color:var(--dim2);padding:20px;text-align:center">Connect bot to see logs...</div></div></div>
+
+    <div class="card"><div class="card-head"><h3>Execution Debug</h3><span class="badge green" id="execStatus">READY</span></div>
+      <div class="card-body mono" style="font-size:11px;line-height:1.6;color:var(--dim)">
+        <div>Last Action: <span id="lastAction" style="color:var(--text)">None</span></div>
+        <div>Last Params: <span id="lastParams" style="color:var(--dim)">-</span></div>
+        <div>Last Response: <span id="lastResp" style="color:var(--green)">-</span></div>
+        <div style="margin-top:8px;border-top:1px solid #222;padding-top:8px">
+          <b style="color:var(--text)">If click does nothing:</b><br>
+          1. Check bot CONNECTED (green dot)<br>
+          2. Check permissions card (has ✅)<br>
+          3. Click ⚡ TEST EXECUTION<br>
+          4. Open browser console F12 → check errors<br>
+          5. Check Live Logs for API /action<br>
+        </div>
       </div>
     </div>
   </div>
@@ -130,127 +131,238 @@ body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-ser
   <div class="main">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
       <div class="tabs" id="tabs"></div>
-      <div style="display:flex;gap:6px"><span class="badge mono">39/39 COMMANDS</span><span class="badge mono">WEB UI</span></div>
+      <div style="display:flex;gap:6px"><span class="badge mono">CLICK = EXECUTE FIXED</span><span class="badge mono">ALL 39 CMDS</span></div>
     </div>
     <div class="grid" id="cmdGrid"></div>
-    <div class="footer"><b>VOID-NUKE v1.0.0</b> by 1s0e — t.me/v0idtool · discord.gg/voidv2 • github.com/v0id4real/Void-Nuke<br>
-      <span style="color:#444">Fixed build • audioop-lts • Python 3.11/3.13 • 512MB • gthread • Educational only</span></div>
+    <div class="footer"><b>VOID-NUKE v1.0.0 FIXED</b> — Execution bug fixed (confirm bool handling), Permissions panel added, command_runner.py added, all 39 cmds from original github.com/v0id4real/Void-Nuke<br><span style="color:#444">python run.py --cli for CLI, python run.py for Web UI</span></div>
   </div>
 </div>
 
 <div class="modal" id="modal"><div class="modal-box"><div class="modal-head"><h3 id="modalTitle">Action</h3><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div><div class="modal-body" id="modalBody"></div></div></div>
+<div class="toast" id="toast"></div>
 
 <script>
-const CATS = {
-  all: "All (39)",
-  nuke: "💣 Nuke / Raid",
-  mod: "🔨 Moderation",
-  channel: "📁 Channels/Roles/Server",
-  member: "👤 Members / VC",
-  message: "💬 Spam / Messaging",
-  util: "⚙️ Utilities / Info"
-};
+// Debug
+console.log("[VOID-NUKE WEB] Loaded - Execution Fixed Version");
+const CATS = {all:"All (39)", nuke:"💣 Nuke / Raid", mod:"🔨 Moderation", channel:"📁 Channels/Roles/Server", member:"👤 Members / VC", message:"💬 Spam / Messaging", util:"⚙️ Utilities / Info"};
 
 const COMMANDS = [
-  // Page1 original 01-20
-  {id:"nuke", num:"01", cat:"nuke", name:"Nuke", desc:"Full nuke: delete ch/roles + create 50 raid ch + 50 roles + webhook spam. Original 01.", danger:true, params:[{k:"num_channels", label:"Channels/Roles to create (free safe 30, max 50)", type:"number", def:30}]},
-  {id:"auto_raid", num:"02", cat:"nuke", name:"Auto Raid", desc:"Auto raid from config. Deletes ch, creates raid. Original 02.", danger:true, params:[{k:"num_channels", label:"Channels (max 50)", type:"number", def:20},{k:"num_messages", label:"Messages per channel (max 10)", type:"number", def:3}]},
-  {id:"ban_all", num:"03", cat:"mod", name:"Ban All", desc:"Ban all members (skip bots & whitelist). Original 03.", danger:true},
-  {id:"kick_all", num:"04", cat:"mod", name:"Kick All", desc:"Kick all members. Original 04.", danger:true},
-  {id:"mute_all", num:"05", cat:"mod", name:"Mute All", desc:"Timeout all members. Original 05.", params:[{k:"minutes", label:"Minutes", type:"number", def:60}]},
-  {id:"unban_all", num:"06", cat:"mod", name:"Unban All", desc:"Unban all bans. Original 06."},
-  {id:"delete_channels", num:"07", cat:"channel", name:"Del Channels", desc:"Delete all channels. Original 07.", danger:true},
-  {id:"delete_emojis", num:"08", cat:"channel", name:"Del Emojis", desc:"Delete all emojis. Original 08."},
-  {id:"delete_stickers", num:"09", cat:"channel", name:"Del Stickers", desc:"Delete all stickers. Original 09."},
-  {id:"create_channels", num:"10", cat:"channel", name:"Create Channels", desc:"Mass create text/voice channels. Original 10.", params:[{k:"quantity", label:"Quantity (max 50)", type:"number", def:10},{k:"type", label:"Type text/voice", type:"select", opts:["text","voice"], def:"text"},{k:"name", label:"Name", type:"text", def:"raid-by-void"}]},
-  {id:"create_roles", num:"11", cat:"channel", name:"Create Roles", desc:"Mass create roles. Original 11.", params:[{k:"quantity", label:"Qty", type:"number", def:10},{k:"name", label:"Role name", type:"text", def:"VOID-NUKE"}]},
-  {id:"create_cats", num:"12", cat:"channel", name:"Create Cats", desc:"Create categories. Original 12 Create Cats.", params:[{k:"quantity", label:"Qty", type:"number", def:5},{k:"name", label:"Name", type:"text", def:"VOID-NUKE"}]},
-  {id:"rename_channels", num:"13", cat:"channel", name:"Rename Channels", desc:"Rename all channels. Original 13.", params:[{k:"name", label:"New name", type:"text", def:"raid-by-void"}]},
-  {id:"rename_roles", num:"14", cat:"channel", name:"Rename Roles", desc:"Rename all roles. Original 14.", params:[{k:"name", label:"New name", type:"text", def:"VOID-NUKE"}]},
-  {id:"edit_server", num:"15", cat:"channel", name:"Edit Server", desc:"Edit name/desc/icon. Original 15 Edit Server.", params:[{k:"name", label:"New server name", type:"text", def:"RAIDED BY VOID-NUKE"},{k:"description", label:"Description", type:"text", def:"t.me/v0idtool · discord.gg/voidv2"},{k:"icon_url", label:"Icon URL (optional)", type:"text", def:""}]},
-  {id:"rename_members", num:"16", cat:"member", name:"Rename Members", desc:"Rename all members nick. Original 16 Rename Members.", params:[{k:"name", label:"Nickname (32 chars)", type:"text", def:"VOID"}]},
-  {id:"fix_nicks", num:"17", cat:"member", name:"Fix Nicks", desc:"Dehoist nicks starting with special chars. Original 17 Fix Nicks / Dehoist.", params:[]},
-  {id:"get_admin", num:"18", cat:"member", name:"Get Admin", desc:"Create admin role + give. Original 18 Get Admin.", params:[{k:"user_id", label:"User ID blank=all", type:"text", def:""}]},
-  {id:"impersonate", num:"19", cat:"message", name:"Impersonate", desc:"Send as user via webhook. Original 19 Impersonate.", params:[{k:"target_id", label:"Target user ID", type:"text", def:""},{k:"message", label:"Message to send", type:"text", def:"Hello"},{k:"channel_id", label:"Channel ID blank=all", type:"text", def:""}]},
-  {id:"ghost_ping", num:"20", cat:"member", name:"Ghost Ping", desc:"Ping each member then delete. Original 20 Ghost Ping.", params:[]},
-
-  // Page2 21-39
-  {id:"strip_roles", num:"21", cat:"member", name:"Remov Roles", desc:"Strip all roles from members. Original 21 Remov Roles.", params:[]},
-  {id:"dm_all", num:"22", cat:"message", name:"Message All", desc:"DM all members. Original 22 Message All.", params:[{k:"content", label:"DM content", type:"text", def:"RAID BY VOID-NUKE"}]},
-  {id:"dm_spam_user", num:"23", cat:"message", name:"DM Spam User", desc:"Spam DM specific user ID. Original 23 DM Spam User.", params:[{k:"user_id", label:"Target ID", type:"text", def:""},{k:"count", label:"Count max 20", type:"number", def:5},{k:"content", label:"Message", type:"text", def:"VOID-NUKE"}]},
-  {id:"webhook_spam", num:"24", cat:"message", name:"Webhook Spam", desc:"Create webhook per channel & spam. Original 24 Webhook Spam.", params:[{k:"count", label:"Msgs per webhook (max5)", type:"number", def:2},{k:"content", label:"Content or 'embed'", type:"text", def:"@everyone VOID-NUKE"}]},
-  {id:"server_info", num:"25", cat:"util", name:"Server Info", desc:"Show detailed server info. Original 25 Server Info.", params:[]},
-  {id:"clone_server", num:"26", cat:"util", name:"Clone Server", desc:"Clone structure to JSON. Original 26 Clone Server.", params:[]},
-  {id:"webhook_logger", num:"27", cat:"util", name:"Webhook Logs", desc:"Log all msgs to webhook. Original 27 Webhook Logs. Remains until disconnect.", params:[{k:"webhook_url", label:"Discord webhook URL", type:"text", def:""}]},
-  {id:"lockdown", num:"28", cat:"util", name:"Lockdown", desc:"Lock all text channels. Original 28 Lockdown.", params:[]},
-  {id:"deafen_all", num:"29", cat:"member", name:"Sourdine VC", desc:"Deafen all in voice. Original 29 Sourdine VC.", params:[]},
-  {id:"disconnect_all", num:"30", cat:"member", name:"Kick VC All", desc:"Disconnect all from VC. Original 30 Kick VC All.", params:[]},
-  {id:"mass_move", num:"31", cat:"member", name:"Move All VC", desc:"Move all voice members to target VC. Original 31 Move All VC.", params:[{k:"target_id", label:"Target Voice Channel ID", type:"text", def:""}]},
-  {id:"invite_spam", num:"32", cat:"message", name:"Invite Spam", desc:"Create invite spam. Original 32 Invite Spam.", params:[{k:"count", label:"Qty (max20)", type:"number", def:5}]},
-  {id:"spam", num:"33", cat:"message", name:"Spam", desc:"Spam in all channels. Original 33 Spam. Supports embed.", params:[{k:"count", label:"Msgs per ch max10", type:"number", def:3},{k:"content", label:"Content or 'embed'", type:"text", def:"@everyone RAID BY VOID-NUKE"}]},
-  {id:"thread_spam", num:"34", cat:"message", name:"Thread Spam", desc:"Create threads. Original 34 Thread Spam.", params:[{k:"count", label:"Threads per ch max5", type:"number", def:2},{k:"name", label:"Thread name", type:"text", def:"VOID-NUKE"}]},
-  {id:"reaction_spam", num:"35", cat:"message", name:"Reaction Spam", desc:"Add VOID emoji reactions to history. Original 35 Reaction Spam.", params:[{k:"limit", label:"Msgs per ch to react (max20)", type:"number", def:5}]},
-  {id:"vc_spam", num:"36", cat:"member", name:"Voice Spam", desc:"Join/leave VC spam. Original 36 Voice Spam. Needs voice.", params:[{k:"loops", label:"Cycles per VC max5", type:"number", def:2}]},
-  {id:"spoiler_spam", num:"37", cat:"message", name:"Spoiler Spam", desc:"Send spoiler-wrapped msgs. Original 37 Spoiler Spam.", params:[{k:"count", label:"Count max10", type:"number", def:2},{k:"content", label:"Content", type:"text", def:"VOID"}]},
-  {id:"poll_spam", num:"38", cat:"message", name:"Poll Spam", desc:"Create poll spam. Original 38 Poll Spam.", params:[{k:"count", label:"Polls per ch max10", type:"number", def:2},{k:"question", label:"Question", type:"text", def:"Join VOID-NUKE"}]},
-  {id:"event_spam", num:"39", cat:"message", name:"Event Spam", desc:"Create scheduled events. Original 39 Event Spam.", params:[{k:"count", label:"Qty max15", type:"number", def:3},{k:"name", label:"Event name", type:"text", def:"VOID-NUKE TOOLS"},{k:"description", label:"Description", type:"text", def:"RAIDED BY VOID-NUKE"}]},
+  {id:"nuke", num:"01", cat:"nuke", name:"Nuke", desc:"Full nuke: delete ch/roles + create 50 raid + webhook spam. Needs Admin + Manage Ch/Roles/Webhooks.", danger:true, params:[{k:"num_channels", label:"Channels/Roles to create (free safe 30, max 50)", type:"number", def:30}]},
+  {id:"auto_raid", num:"02", cat:"nuke", name:"Auto Raid", desc:"Auto raid from config. Deletes ch, creates raid. Needs Admin.", danger:true, params:[{k:"num_channels", label:"Channels (max 50)", type:"number", def:20},{k:"num_messages", label:"Messages per channel (max 10)", type:"number", def:3}]},
+  {id:"ban_all", num:"03", cat:"mod", name:"Ban All", desc:"Ban all members. Needs Ban Members or Admin. Destructive.", danger:true},
+  {id:"kick_all", num:"04", cat:"mod", name:"Kick All", desc:"Kick all members. Needs Kick Members.", danger:true},
+  {id:"mute_all", num:"05", cat:"mod", name:"Mute All", desc:"Timeout all members. Needs Moderate Members.", params:[{k:"minutes", label:"Minutes", type:"number", def:60}]},
+  {id:"unban_all", num:"06", cat:"mod", name:"Unban All", desc:"Unban all bans. Needs Ban Members."},
+  {id:"delete_channels", num:"07", cat:"channel", name:"Del Channels", desc:"Delete all channels. Needs Manage Channels.", danger:true},
+  {id:"delete_emojis", num:"08", cat:"channel", name:"Del Emojis", desc:"Delete all emojis. Needs Manage Emojis."},
+  {id:"delete_stickers", num:"09", cat:"channel", name:"Del Stickers", desc:"Delete all stickers. Needs Manage Emojis."},
+  {id:"create_channels", num:"10", cat:"channel", name:"Create Channels", desc:"Mass create text/voice channels. Needs Manage Channels.", params:[{k:"quantity", label:"Quantity (max 50)", type:"number", def:10},{k:"type", label:"Type text/voice", type:"select", opts:["text","voice"], def:"text"},{k:"name", label:"Name", type:"text", def:"raid-by-void"}]},
+  {id:"create_roles", num:"11", cat:"channel", name:"Create Roles", desc:"Mass create roles. Needs Manage Roles.", params:[{k:"quantity", label:"Qty", type:"number", def:10},{k:"name", label:"Role name", type:"text", def:"VOID-NUKE"}]},
+  {id:"create_cats", num:"12", cat:"channel", name:"Create Cats", desc:"Create categories. Needs Manage Channels.", params:[{k:"quantity", label:"Qty", type:"number", def:5},{k:"name", label:"Name", type:"text", def:"VOID-NUKE"}]},
+  {id:"rename_channels", num:"13", cat:"channel", name:"Rename Channels", desc:"Rename all channels. Needs Manage Channels.", params:[{k:"name", label:"New name", type:"text", def:"raid-by-void"}]},
+  {id:"rename_roles", num:"14", cat:"channel", name:"Rename Roles", desc:"Rename all roles. Needs Manage Roles.", params:[{k:"name", label:"New name", type:"text", def:"VOID-NUKE"}]},
+  {id:"edit_server", num:"15", cat:"channel", name:"Edit Server", desc:"Edit name/desc/icon. Needs Manage Guild.", params:[{k:"name", label:"New server name", type:"text", def:"RAIDED BY VOID-NUKE"},{k:"description", label:"Description", type:"text", def:"t.me/v0idtool · discord.gg/voidv2"},{k:"icon_url", label:"Icon URL (optional)", type:"text", def:""}]},
+  {id:"rename_members", num:"16", cat:"member", name:"Rename Members", desc:"Rename all members nick. Needs Manage Nicknames (high role).", params:[{k:"name", label:"Nickname (32 chars)", type:"text", def:"VOID"}]},
+  {id:"fix_nicks", num:"17", cat:"member", name:"Fix Nicks", desc:"Dehoist nicks starting with special chars. Original 17."},
+  {id:"get_admin", num:"18", cat:"member", name:"Get Admin", desc:"Create admin role + give. Needs Manage Roles + Admin to create admin role.", params:[{k:"user_id", label:"User ID blank=all", type:"text", def:""}]},
+  {id:"impersonate", num:"19", cat:"message", name:"Impersonate", desc:"Send as user via webhook. Needs Manage Webhooks.", params:[{k:"target_id", label:"Target user ID", type:"text", def:""},{k:"message", label:"Message to send", type:"text", def:"Hello"},{k:"channel_id", label:"Channel ID blank=all", type:"text", def:""}]},
+  {id:"ghost_ping", num:"20", cat:"member", name:"Ghost Ping", desc:"Ping each member then delete. Needs Send Messages + Manage Messages."},
+  {id:"strip_roles", num:"21", cat:"member", name:"Remov Roles", desc:"Strip all roles from members. Needs Manage Roles."},
+  {id:"dm_all", num:"22", cat:"message", name:"Message All", desc:"DM all members.", params:[{k:"content", label:"DM content", type:"text", def:"RAID BY VOID-NUKE"}]},
+  {id:"dm_spam_user", num:"23", cat:"message", name:"DM Spam User", desc:"Spam DM specific user.", params:[{k:"user_id", label:"Target ID", type:"text", def:""},{k:"count", label:"Count max 20", type:"number", def:5},{k:"content", label:"Message", type:"text", def:"VOID-NUKE"}]},
+  {id:"webhook_spam", num:"24", cat:"message", name:"Webhook Spam", desc:"Create webhook per channel & spam. Needs Manage Webhooks.", params:[{k:"count", label:"Msgs per webhook (max5)", type:"number", def:2},{k:"content", label:"Content or 'embed'", type:"text", def:"@everyone VOID-NUKE"}]},
+  {id:"server_info", num:"25", cat:"util", name:"Server Info", desc:"Show detailed server info. No perm needed."},
+  {id:"clone_server", num:"26", cat:"util", name:"Clone Server", desc:"Clone structure to JSON."},
+  {id:"webhook_logger", num:"27", cat:"util", name:"Webhook Logs", desc:"Log all msgs to webhook. Needs webhook URL.", params:[{k:"webhook_url", label:"Discord webhook URL", type:"text", def:""}]},
+  {id:"lockdown", num:"28", cat:"util", name:"Lockdown", desc:"Lock all text channels. Needs Manage Channels.", params:[]},
+  {id:"deafen_all", num:"29", cat:"member", name:"Sourdine VC", desc:"Deafen all in voice. Needs Mute Members."},
+  {id:"disconnect_all", num:"30", cat:"member", name:"Kick VC All", desc:"Disconnect all from VC. Needs Move Members."},
+  {id:"mass_move", num:"31", cat:"member", name:"Move All VC", desc:"Move all voice members to target VC. Needs Move Members.", params:[{k:"target_id", label:"Target Voice Channel ID", type:"text", def:""}]},
+  {id:"invite_spam", num:"32", cat:"message", name:"Invite Spam", desc:"Create invite spam. Needs Create Invite.", params:[{k:"count", label:"Qty (max20)", type:"number", def:5}]},
+  {id:"spam", num:"33", cat:"message", name:"Spam", desc:"Spam in all channels. Needs Send Messages.", params:[{k:"count", label:"Msgs per ch max10", type:"number", def:3},{k:"content", label:"Content or 'embed'", type:"text", def:"@everyone RAID BY VOID-NUKE"}]},
+  {id:"thread_spam", num:"34", cat:"message", name:"Thread Spam", desc:"Create threads. Needs Send Messages.", params:[{k:"count", label:"Threads per ch max5", type:"number", def:2},{k:"name", label:"Thread name", type:"text", def:"VOID-NUKE"}]},
+  {id:"reaction_spam", num:"35", cat:"message", name:"Reaction Spam", desc:"Add VOID emoji reactions. Needs Read History + Add Reaction.", params:[{k:"limit", label:"Msgs per ch to react (max20)", type:"number", def:5}]},
+  {id:"vc_spam", num:"36", cat:"member", name:"Voice Spam", desc:"Join/leave VC spam. Voice.", params:[{k:"loops", label:"Cycles per VC max5", type:"number", def:2}]},
+  {id:"spoiler_spam", num:"37", cat:"message", name:"Spoiler Spam", desc:"Send spoiler-wrapped msgs.", params:[{k:"count", label:"Count max10", type:"number", def:2},{k:"content", label:"Content", type:"text", def:"VOID"}]},
+  {id:"poll_spam", num:"38", cat:"message", name:"Poll Spam", desc:"Create poll spam.", params:[{k:"count", label:"Polls per ch max10", type:"number", def:2},{k:"question", label:"Question", type:"text", def:"Join VOID-NUKE"}]},
+  {id:"event_spam", num:"39", cat:"message", name:"Event Spam", desc:"Create scheduled events. Needs Manage Events.", params:[{k:"count", label:"Qty max15", type:"number", def:3},{k:"name", label:"Event name", type:"text", def:"VOID-NUKE TOOLS"},{k:"description", label:"Description", type:"text", def:"RAIDED BY VOID-NUKE"}]},
 ];
 
-let activeCat = "all";
-let currentAction = null;
+let activeCat="all"; let currentAction=null;
+
+function showToast(msg, type="ok"){
+  const t=document.getElementById('toast');
+  t.className=`toast ${type} show`;
+  t.innerText=msg;
+  setTimeout(()=>{t.className="toast "+type;}, 4000);
+}
 
 function renderTabs(){
-  const el = document.getElementById('tabs');
-  el.innerHTML = Object.entries(CATS).map(([k,v])=>`<div class="tab ${activeCat===k?'active':''}" onclick="setCat('${k}')">${v}</div>`).join('');
+  const el=document.getElementById('tabs');
+  el.innerHTML=Object.entries(CATS).map(([k,v])=>`<div class="tab ${activeCat===k?'active':''}" onclick="setCat('${k}')">${v}</div>`).join('');
 }
 function setCat(c){activeCat=c;renderTabs();renderGrid();}
 function renderGrid(){
   const grid=document.getElementById('cmdGrid');
-  const list = activeCat==='all'? COMMANDS : COMMANDS.filter(x=>x.cat===activeCat);
-  grid.innerHTML = list.map(cmd=>`
+  const list=activeCat==='all'?COMMANDS:COMMANDS.filter(x=>x.cat===activeCat);
+  grid.innerHTML=list.map(cmd=>`
     <div class="cmd ${cmd.danger?'danger':''}">
       <div class="cmd-top"><span class="cmd-id">#${cmd.num}</span><span class="cmd-cat">${CATS[cmd.cat]}</span></div>
       <h4>${cmd.name}</h4><p>${cmd.desc}</p>
-      <div class="cmd-act"><button class="btn ${cmd.danger?'btn-red':'btn-ghost'} btn-sm" style="flex:1" onclick="openAction('${cmd.id}')">${cmd.danger?'⚠️ RUN':'RUN'}</button></div>
+      <div class="cmd-act">
+        <button class="btn ${cmd.danger?'btn-red':'btn-ghost'} btn-sm" style="flex:1" onclick="openAction('${cmd.id}')" data-testid="run-${cmd.id}">▶ RUN</button>
+        <button class="btn btn-ghost btn-sm" title="Copy ID" onclick="navigator.clipboard.writeText('${cmd.id}');showToast('Copied ${cmd.id}','ok')">ID</button>
+      </div>
     </div>`).join('');
 }
+
 function openAction(id){
-  const cmd = COMMANDS.find(c=>c.id===id); if(!cmd) return; currentAction=cmd;
-  document.getElementById('modalTitle').innerText = `#${cmd.num} ${cmd.name}`;
-  let html = `<div style="font-size:13px;color:var(--dim)">${cmd.desc}</div>`;
+  console.log("[OPEN] Action", id);
+  const cmd=COMMANDS.find(c=>c.id===id);
+  if(!cmd){showToast("Command not found: "+id,"err"); return;}
+  currentAction=cmd;
+  document.getElementById('modalTitle').innerText=`#${cmd.num} ${cmd.name}`;
+  let html=`<div style="font-size:13px;color:var(--dim)">${cmd.desc}</div>`;
   if(cmd.params && cmd.params.length){
     cmd.params.forEach(p=>{
       if(p.type==='select'){html+=`<div><label class="label">${p.label}</label><select class="input" id="p_${p.k}">${p.opts.map(o=>`<option value="${o}" ${o===p.def?'selected':''}>${o}</option>`).join('')}</select></div>`;}
-      else{html+=`<div><label class="label">${p.label}</label><input class="input" id="p_${p.k}" type="${p.type}" value="${p.def.replace(/"/g,'&quot;')}"></div>`;}
+      else{html+=`<div><label class="label">${p.label}</label><input class="input" id="p_${p.k}" type="${p.type}" value="${String(p.def).replace(/"/g,'&quot;')}"></div>`;}
     });
-  } else {html+=`<div class="mono" style="font-size:11px;color:var(--dim2)">No params needed - will use guild context</div>`;}
-  if(cmd.danger){html+=`<label class="check"><input type="checkbox" id="p_confirm"><span>Confirm <b style="color:var(--red)">destructive</b> - I own server / have permission. Free tier limited to 30 ops to protect 512MB RAM.</span></label>`;}
-  html+=`<div style="display:flex;gap:8px;margin-top:4px"><button class="btn btn-red" style="flex:1" onclick="execute()">EXECUTE</button><button class="btn btn-ghost" style="flex:1" onclick="closeModal()">CANCEL</button></div>`;
-  document.getElementById('modalBody').innerHTML = html;
+  } else {html+=`<div class="mono" style="font-size:11px;color:var(--dim2)">No params needed, uses guild context</div>`;}
+  if(cmd.danger){html+=`<label class="check"><input type="checkbox" id="p_confirm"><span>Confirm <b style="color:var(--red)">destructive</b> - I own server / have permission. Free tier limit 30 ops.</span></label>`;}
+  html+=`<div style="display:flex;gap:8px;margin-top:6px"><button class="btn btn-red" style="flex:1" id="btnExecModal" onclick="execute()">⚡ EXECUTE ${cmd.name}</button><button class="btn btn-ghost" style="flex:1" onclick="closeModal()">CANCEL</button></div><div class="mono" style="font-size:10px;color:var(--dim2);margin-top:8px">Will POST /api/action with action=${cmd.id}. Check console F12 for debug.</div>`;
+  document.getElementById('modalBody').innerHTML=html;
   document.getElementById('modal').classList.add('open');
+  // Focus first input
+  setTimeout(()=>{const first=document.querySelector('#modalBody .input'); if(first) first.focus();},100);
 }
-function closeModal(){document.getElementById('modal').classList.remove('open');currentAction=null;}
+function closeModal(){document.getElementById('modal').classList.remove('open'); currentAction=null;}
+
 async function execute(){
-  if(!currentAction) return;
+  console.log("[EXECUTE] Clicked", currentAction);
+  if(!currentAction){showToast("No current action","err"); return;}
   const params={};
-  if(currentAction.params){currentAction.params.forEach(p=>{const el=document.getElementById(`p_${p.k}`); if(el) params[p.k]=el.value;});}
-  if(currentAction.danger){const chk=document.getElementById('p_confirm'); if(!chk||!chk.checked){alert("Confirm destructive");return;} params.confirm=true;}
-  closeModal(); addLogLocal("INFO", `→ ${currentAction.id}...`);
   try{
-    const res=await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:currentAction.id,params})});
-    const data=await res.json(); if(!res.ok) throw new Error(data.error||'Failed');
-    addLogLocal("OK", data.message||'Started');
-  }catch(e){addLogLocal("ERR", e.message); alert(e.message);}
+    if(currentAction.params){
+      currentAction.params.forEach(p=>{
+        const el=document.getElementById(`p_${p.k}`);
+        if(el){params[p.k]=el.value; console.log(`[PARAM] ${p.k} = ${el.value}`);}
+      });
+    }
+    if(currentAction.danger){
+      const chk=document.getElementById('p_confirm');
+      if(!chk){showToast("Confirm checkbox not found","err"); return;}
+      if(!chk.checked){showToast("Please confirm destructive action","warn"); alert("Please check confirm box"); return;}
+      params.confirm=true;
+      console.log("[CONFIRM] true");
+    }
+  }catch(e){console.error("[EXECUTE] param parse error", e); showToast("Param error: "+e.message,"err"); return;}
+
+  // UI feedback
+  const btn=document.getElementById('btnExecModal');
+  if(btn){btn.disabled=true; btn.innerText="⏳ STARTING...";}
+  document.getElementById('lastAction').innerText=currentAction.id;
+  document.getElementById('lastParams').innerText=JSON.stringify(params).slice(0,80);
+  document.getElementById('lastResp').innerText="sending...";
+  document.getElementById('execStatus').innerText="EXECUTING...";
+  showToast(`Starting ${currentAction.name}...`,"ok");
+  addLogLocal("INFO", `→ User clicked EXECUTE ${currentAction.id} ${JSON.stringify(params)}`);
+
+  try{
+    console.log("[FETCH] POST /api/action", {action:currentAction.id, params});
+    const res=await fetch('/api/action',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:currentAction.id, params})
+    });
+    const text=await res.text();
+    console.log("[FETCH] Response status", res.status, "body", text);
+    let data;
+    try{data=JSON.parse(text);}catch{data={raw:text};}
+    
+    document.getElementById('lastResp').innerText=`${res.status} ${text.slice(0,100)}`;
+    
+    if(!res.ok){
+      const errMsg=data.error||data.raw||`HTTP ${res.status}`;
+      addLogLocal("ERR", `Action failed: ${errMsg}`);
+      showToast(`Failed: ${errMsg}`,"err");
+      alert(`Action failed:\n${errMsg}\n\nCheck Live Logs & Permissions panel.`);
+      if(btn){btn.disabled=false; btn.innerText=`⚡ EXECUTE ${currentAction.name}`;}
+      document.getElementById('execStatus').innerText="FAILED";
+      return;
+    }
+    
+    closeModal();
+    addLogLocal("OK", data.message||`Task ${data.action} started`);
+    showToast(data.message||`Task ${currentAction.name} started! Check logs`,"ok");
+    document.getElementById('execStatus').innerText="OK - CHECK LOGS";
+    document.getElementById('lastResp').innerText=data.message||"OK";
+    
+    // Refresh logs and perms after short delay
+    setTimeout(()=>{pollLogs(); loadPermissions();}, 800);
+    
+  }catch(e){
+    console.error("[FETCH] Error", e);
+    addLogLocal("ERR", `Fetch error: ${e.message}`);
+    showToast(`Error: ${e.message}`,"err");
+    alert(`Execution error: ${e.message}\n\n1. Check bot CONNECTED\n2. Check permissions panel\n3. Check browser console F12\n4. Try TEST EXECUTION button`);
+    document.getElementById('execStatus').innerText="ERROR";
+    document.getElementById('lastResp').innerText=e.message;
+    if(btn){btn.disabled=false; btn.innerText=`⚡ EXECUTE ${currentAction.name}`;}
+  }
 }
+
+// Connection
 document.getElementById('btnConnect').onclick=async()=>{
-  const token=document.getElementById('token').value.trim(); const guildId=document.getElementById('guildId').value.trim();
-  if(!token||!guildId){alert("Token + Server ID needed");return;}
+  const token=document.getElementById('token').value.trim();
+  const guildId=document.getElementById('guildId').value.trim();
+  if(!token||!guildId){showToast("Token + Server ID required","warn"); alert("Token and Server ID required"); return;}
   const btn=document.getElementById('btnConnect'); btn.disabled=true; btn.innerText="CONNECTING...";
-  try{const r=await fetch('/api/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,guild_id:guildId})}); const d=await r.json(); if(!r.ok) throw new Error(d.error); addLogLocal("INFO","Bot thread starting...");}catch(e){addLogLocal("ERR", e.message); alert(e.message);} btn.disabled=false; btn.innerText="CONNECT BOT";
+  addLogLocal("INFO","Connecting...");
+  try{
+    const r=await fetch('/api/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token, guild_id:guildId})});
+    const d=await r.json(); console.log("[CONNECT]", d);
+    if(!r.ok) throw new Error(d.error);
+    showToast("Bot thread started, waiting READY...","ok");
+    addLogLocal("INFO","Bot thread started");
+    // Poll status quickly
+    for(let i=0;i<5;i++){await new Promise(res=>setTimeout(res,1000)); await pollStatus(); await loadPermissions(); const dot=document.getElementById('dot'); if(dot.classList.contains('on')) break;}
+  }catch(e){console.error(e); addLogLocal("ERR", e.message); showToast(e.message,"err"); alert(e.message);}
+  btn.disabled=false; btn.innerText="CONNECT BOT";
 };
-document.getElementById('btnDisconnect').onclick=async()=>{await fetch('/api/disconnect',{method:'POST'}); addLogLocal("WARN","Disconnected");};
-function addLogLocal(lvl,msg){const wrap=document.getElementById('logWrap'); const ts=new Date().toLocaleTimeString(); const line=document.createElement('div'); line.className='log-line'; line.innerHTML=`<span class="log-ts">${ts}</span><span class="log-lvl lvl-${lvl}">${lvl}</span><span>${msg}</span>`; wrap.appendChild(line); wrap.scrollTop=wrap.scrollHeight; document.getElementById('logCount').innerText=wrap.children.length;}
-async function pollLogs(){try{const r=await fetch('/api/logs?limit=120'); const logs=await r.json(); const wrap=document.getElementById('logWrap'); if(logs.length){wrap.innerHTML=logs.map(l=>`<div class="log-line"><span class="log-ts">${l.ts}</span><span class="log-lvl lvl-${l.level}">${l.level}</span><span>${l.msg.replace(/</g,'&lt;')}</span></div>`).join(''); wrap.scrollTop=wrap.scrollHeight; document.getElementById('logCount').innerText=logs.length;}}catch{}}
+document.getElementById('btnDisconnect').onclick=async()=>{await fetch('/api/disconnect',{method:'POST'}); addLogLocal("WARN","Disconnected"); showToast("Disconnected","warn"); document.getElementById('permCard').style.display='none';};
+document.getElementById('btnTestExec').onclick=async()=>{
+  console.log("[TEST EXEC]");
+  if(!document.getElementById('dot').classList.contains('on')){showToast("Connect bot first!","warn"); alert("Connect bot first - dot must be green"); return;}
+  // Directly run server_info
+  currentAction=COMMANDS.find(c=>c.id==='server_info');
+  if(!currentAction){showToast("server_info not found","err"); return;}
+  addLogLocal("INFO","→ TEST EXECUTION server_info");
+  try{
+    const res=await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'server_info', params:{}})});
+    const txt=await res.text(); console.log("[TEST] resp", res.status, txt);
+    let data; try{data=JSON.parse(txt)}catch{data={raw:txt};}
+    if(!res.ok){showToast("Test failed: "+(data.error||txt),"err"); alert("Test failed: "+JSON.stringify(data));}
+    else{showToast("Test OK: "+(data.message||"Started")+" - Check logs","ok"); addLogLocal("OK","Test execution OK: "+txt.slice(0,150));}
+  }catch(e){console.error(e); showToast("Test error: "+e.message,"err"); addLogLocal("ERR","Test error: "+e.message);}
+};
+
+function addLogLocal(lvl,msg){
+  const wrap=document.getElementById('logWrap');
+  if(wrap.innerHTML.includes("Connect bot to see logs")) wrap.innerHTML="";
+  const ts=new Date().toLocaleTimeString();
+  const line=document.createElement('div'); line.className='log-line';
+  line.innerHTML=`<span class="log-ts">${ts}</span><span class="log-lvl lvl-${lvl}">${lvl}</span><span>${String(msg).replace(/</g,'&lt;')}</span>`;
+  wrap.appendChild(line); wrap.scrollTop=wrap.scrollHeight;
+  document.getElementById('logCount').innerText=wrap.children.length;
+}
+async function pollLogs(){
+  try{
+    const r=await fetch('/api/logs?limit=150'); const logs=await r.json();
+    const wrap=document.getElementById('logWrap');
+    if(logs.length){wrap.innerHTML=logs.map(l=>`<div class="log-line"><span class="log-ts">${l.ts}</span><span class="log-lvl lvl-${l.level}">${l.level}</span><span>${l.msg.replace(/</g,'&lt;')}</span></div>`).join(''); wrap.scrollTop=wrap.scrollHeight; document.getElementById('logCount').innerText=logs.length;}
+  }catch(e){console.error("pollLogs", e);}
+}
 async function pollStatus(){
   try{
     const r=await fetch('/api/status'); const s=await r.json();
@@ -259,23 +371,84 @@ async function pollStatus(){
       dot.className='dot on'; txt.innerText=`CONNECTED • ${s.guild.name||'...'}`; card.style.display='block';
       if(s.guild && s.guild.name){
         document.getElementById('guildName').innerText=s.guild.name;
-        document.getElementById('guildMeta').innerText=`${s.guild.members} members • ${s.guild.channels} ch • ${s.guild.roles} roles • Py${s.python}`;
+        document.getElementById('guildMeta').innerText=`${s.guild.members} m • ${s.guild.channels} ch • ${s.guild.roles} roles • Py${s.python}`;
         document.getElementById('guildIcon').innerText=s.guild.name[0]?.toUpperCase()||'?';
         document.getElementById('stats').innerHTML=`<div style="background:#0e0e0e;border:1px solid #222;border-radius:6px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700">${s.guild.members}</div><div style="font-size:10px;color:#666">MEMBERS</div></div><div style="background:#0e0e0e;border:1px solid #222;border-radius:6px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700">${s.guild.channels}</div><div style="font-size:10px;color:#666">CHANNELS</div></div>`;
-        // channels
+        document.getElementById('permCard').style.display='block';
         try{
           const cr=await fetch('/api/channels'); const cd=await cr.json();
-          if(cd.text){document.getElementById('chanList').innerHTML=`<b>Text:</b> ${cd.text.slice(0,10).map(c=>c.name).join(', ')}${cd.text.length>10?' ...':''}<br><b>Voice:</b> ${cd.voice.slice(0,5).map(c=>c.name).join(', ')}`;}
+          if(cd.text){document.getElementById('chanList').innerHTML=`<b>Text:</b> ${cd.text.slice(0,8).map(c=>c.name).join(', ')}${cd.text.length>8?' ...':''}<br><b>Voice:</b> ${cd.voice.slice(0,4).map(c=>c.name).join(', ')}`;}
         }catch{}
       }
-    }else{
-      dot.className='dot off'; txt.innerText='DISCONNECTED'; if(!s.guild || !Object.keys(s.guild).length) document.getElementById('guildCard').style.display='none';
-    }
-  }catch{}
+    }else{dot.className='dot off'; txt.innerText='DISCONNECTED'; if(!s.guild || !Object.keys(s.guild).length) document.getElementById('guildCard').style.display='none';}
+  }catch(e){console.error("status", e);}
 }
-async function clearLogs(){await fetch('/api/logs/clear',{method:'POST'}); document.getElementById('logWrap').innerHTML='';}
-async function loadGuilds(){try{const r=await fetch('/api/guilds'); const d=await r.json(); if(Array.isArray(d)){addLogLocal("INFO", `Bot in ${d.length}: ${d.map(g=>g.name).join(', ')}`);}}catch(e){addLogLocal("ERR", e.message);}}
-setInterval(pollLogs,1500); setInterval(pollStatus,2000); pollLogs(); pollStatus(); renderTabs(); renderGrid();
+async function clearLogs(){await fetch('/api/logs/clear',{method:'POST'}); document.getElementById('logWrap').innerHTML='<div class="mono" style="color:var(--dim2);padding:20px;text-align:center">Cleared</div>'; document.getElementById('logCount').innerText='0';}
+async function loadGuilds(){try{const r=await fetch('/api/guilds'); const d=await r.json(); if(Array.isArray(d)){addLogLocal("INFO", `Bot in ${d.length}: ${d.map(g=>g.name).join(', ')}`); showToast(`Bot in ${d.length} guilds`,"ok");}}catch(e){addLogLocal("ERR", e.message); showToast(e.message,"err");}}
+async function loadPermissions(){
+  try{
+    const r=await fetch('/api/permissions');
+    const data=await r.json();
+    const card=document.getElementById('permCard');
+    if(!r.ok){
+      console.log("[PERMS] not ready", data);
+      card.style.display='none';
+      return;
+    }
+    card.style.display='block';
+    const check=data.permissions_check;
+    const guide=data.guide;
+    const overall=document.getElementById('permOverall');
+    const botInfo=document.getElementById('permBotInfo');
+    
+    botInfo.innerHTML=`Bot: ${check.bot_name}<br>ID: ${check.bot_id}<br>Top Role: ${check.top_role} (pos ${check.top_role_pos})<br>Admin: ${check.is_admin?'YES ✅':'NO ❌'}<br>All OK: ${check.all_ok?'YES ✅':'NO ❌'}`;
+    overall.innerText=check.all_ok?'ALL OK ✅':'MISSING ❌';
+    overall.className=`badge ${check.all_ok?'green':'red'}`;
+    
+    // Intents
+    const intentList=document.getElementById('intentList');
+    intentList.innerHTML=Object.entries(check.intents).map(([k,v])=>`
+      <div class="perm-item">
+        <div class="perm-left"><div class="perm-name">${v.name}</div><div class="perm-desc">${v.desc}</div></div>
+        <div class="perm-badge ${v.has?'has-yes':'has-no'}">${v.has?'ON ✅':'OFF ❌'}</div>
+      </div>`).join('');
+    
+    // Permissions
+    const permList=document.getElementById('permList');
+    permList.innerHTML=Object.entries(check.permissions).map(([k,v])=>`
+      <div class="perm-item">
+        <div class="perm-left"><div class="perm-name">${v.name}</div><div class="perm-desc">${v.desc}</div><div class="perm-for">For: ${v.needed_for.join(', ')}</div></div>
+        <div class="perm-badge ${v.has?'has-yes':'has-no'}">${v.has?'YES ✅':'NO ❌'}</div>
+      </div>`).join('');
+    
+    // Guide
+    const guideBox=document.getElementById('guideBox');
+    guideBox.innerHTML=`
+      <b>📖 How to Enable Missing Permissions:</b><br>
+      ${guide.steps.map(s=>`• ${s}<br>`).join('')}
+      <br><b>🔧 Current Diagnostics:</b><br>
+      Top Role: ${guide.diagnostics?.bot_top_role||check.top_role} (pos ${guide.diagnostics?.bot_top_role_pos||check.top_role_pos}) - Must be HIGHER than target roles<br>
+      Is Owner: ${guide.diagnostics?.is_owner?'Yes (owner bypasses some perms)':'No'}<br>
+      <br><b>⚠️ If perms show ❌:</b><br>
+      1. Re-invite bot with Admin: <a href="https://discord.com/developers/applications" target="_blank">Dev Portal</a><br>
+      2. Use URL: <span class="mono" style="background:#111;padding:2px 4px;border-radius:3px">https://discord.com/oauth2/authorize?client_id=${check.bot_id}&permissions=8&scope=bot</span><br>
+      3. In Server → Roles, drag bot role to TOP above other roles<br>
+      4. Enable Intents in Dev Portal → Bot → Privileged Intents<br>
+    `;
+    
+  }catch(e){console.error("perms", e);}
+}
+
+setInterval(pollLogs,2000);
+setInterval(pollStatus,2500);
+setInterval(loadPermissions,5000);
+pollLogs(); pollStatus(); loadPermissions(); renderTabs(); renderGrid();
+
+// Close modal on outside click
+document.getElementById('modal').addEventListener('click', (e)=>{if(e.target.id==='modal') closeModal();});
+document.addEventListener('keydown', (e)=>{if(e.key==='Escape') closeModal();});
+
+console.log("[VOID-NUKE] JS Ready - If RUN does nothing, check console & use TEST EXECUTION button");
 </script>
 </body>
 </html>
