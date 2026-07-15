@@ -1,5 +1,12 @@
 """
-VOID-NUKE WEB - Fixed execution + permissions + audioop
+VOID-NUKE WEB v4 - Multi-threaded + Permissions + audioop fix
+Free Tier: 512MB RAM / 0.1 CPU
+
+Multi-threading:
+- Flask gthread: 1 worker, 4 threads
+- Bot thread: dedicated asyncio loop
+- Command thread pool: 4 workers for concurrent commands
+- API thread pool: 2 workers for blocking tasks
 """
 import sys
 try:
@@ -8,40 +15,36 @@ except ModuleNotFoundError:
     try:
         import audioop_lts as audioop
         sys.modules['audioop']=audioop
-        print("[FIX] audioop-lts shim")
+        print("[FIX] audioop-lts shim", flush=True)
     except ImportError:
         import types
         sys.modules['audioop']=types.ModuleType("audioop")
 
 import os, threading, asyncio, gc, time
+from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from bot_manager import (
-    manager, log_buffer, log_ok, log_err, log_info, log_warn,
-    webhook_logger_check, REQUIRED_PERMISSIONS, REQUIRED_INTENTS
-)
+from bot_manager import manager, log_buffer, log_ok, log_err, log_info, log_warn, webhook_logger_check, REQUIRED_PERMISSIONS, REQUIRED_INTENTS, command_executor, blocking_executor
 
 load_dotenv()
 app = Flask(__name__)
 CORS(app, resources={r"/api/*":{"origins":"*"}})
 app.config['MAX_CONTENT_LENGTH']=1*1024*1024
 
+# Multi-threading executors for Flask
+flask_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="flask-api")
+
 bot_loop=None
 bot_thread_obj=None
 
 def create_bot():
     intents=discord.Intents.none()
-    intents.guilds=True
-    intents.members=True
-    intents.bans=True
-    intents.emojis=True
-    intents.voice_states=True
-    intents.messages=True
-    intents.message_content=True
+    intents.guilds=True; intents.members=True; intents.bans=True
+    intents.emojis=True; intents.voice_states=True; intents.messages=True; intents.message_content=True
     bot=commands.Bot(command_prefix='!', intents=intents, max_messages=None, chunk_guilds_at_startup=False, member_cache_flags=discord.MemberCacheFlags.all())
     return bot
 
@@ -50,9 +53,7 @@ def run_bot(token, guild_id):
     bot_loop=asyncio.new_event_loop()
     asyncio.set_event_loop(bot_loop)
     bot=create_bot()
-    manager.bot=bot
-    manager.guild_id=guild_id
-    manager.loop=bot_loop
+    manager.bot=bot; manager.guild_id=guild_id; manager.loop=bot_loop
 
     @bot.event
     async def on_ready():
@@ -62,7 +63,7 @@ def run_bot(token, guild_id):
             try: await g.chunk()
             except: pass
             manager.guild_info={"name":g.name,"id":str(g.id),"members":g.member_count,"channels":len(g.channels),"roles":len(g.roles),"icon":str(g.icon.url) if g.icon else None}
-            log_ok(f"Connected to {g.name} ({g.member_count} members)")
+            log_ok(f"[THREAD {threading.current_thread().name}] Connected to {g.name} ({g.member_count} members)")
             try:
                 from bot_manager import BOT_PRESENCE
                 from discord import Activity, ActivityType
@@ -71,8 +72,7 @@ def run_bot(token, guild_id):
             except: pass
         else:
             log_warn(f"Bot ready as {bot.user} but guild {guild_id} not found")
-            guilds=[f"{x.name} ({x.id})" for x in bot.guilds[:10]]
-            log_info(f"Available: {', '.join(guilds)}")
+            log_info(f"Available guilds: {[f'{x.name} ({x.id})' for x in bot.guilds[:10]]}")
 
     @bot.event
     async def on_disconnect():
@@ -86,14 +86,9 @@ def run_bot(token, guild_id):
         try: await bot.process_commands(message)
         except: pass
 
-    try:
-        bot_loop.run_until_complete(bot.start(token))
-    except discord.LoginFailure:
-        log_err("Invalid token")
-        manager.connected=False
-    except Exception as e:
-        log_err(f"Bot error: {e}")
-        manager.connected=False
+    try: bot_loop.run_until_complete(bot.start(token))
+    except discord.LoginFailure: log_err("Invalid token"); manager.connected=False
+    except Exception as e: log_err(f"Bot error: {e}"); manager.connected=False
     finally:
         try: bot_loop.run_until_complete(bot.close())
         except: pass
@@ -106,7 +101,16 @@ def index(): return render_template('index.html')
 
 @app.route('/health')
 def health():
-    return jsonify({"status":"ok","bot_connected":manager.connected,"python":sys.version.split()[0],"audioop": "audioop" in sys.modules}),200
+    import threading
+    return jsonify({
+        "status":"ok",
+        "bot_connected":manager.connected,
+        "python":sys.version.split()[0],
+        "audioop": "audioop" in sys.modules,
+        "threads": threading.active_count(),
+        "active_tasks": len(manager.active_tasks),
+        "executor_workers": len(command_executor._threads) if hasattr(command_executor, '_threads') else 0,
+    }),200
 
 @app.route('/api/status')
 def status_api():
@@ -117,45 +121,48 @@ def status_api():
         "bot_user":str(manager.bot.user) if manager.bot and manager.bot.user else None,
         "logs_count":len(log_buffer.logs),
         "python":sys.version.split()[0],
+        "active_tasks": manager.active_tasks,
+        "thread_count": threading.active_count(),
     })
 
 @app.route('/api/permissions')
 def permissions_api():
-    """New: shows required perms + if bot has them + how to fix"""
-    check = manager.check_permissions()
+    check=manager.check_permissions()
     if "error" in check and not check.get("has_guild"):
-        return jsonify(check), 400
-
-    # Build guide
-    guide = {
-        "steps": [
+        return jsonify(check),400
+    guide={
+        "steps":[
             "1. Go to https://discord.com/developers/applications → your bot → Bot tab",
             "2. Enable Privileged Gateway Intents: SERVER MEMBERS INTENT = ON, MESSAGE CONTENT INTENT = ON",
-            "3. Save changes, then re-invite bot with admin: OAuth2 → URL Generator → Scopes: bot + applications.commands, Permissions: Administrator (8)",
-            "4. Invite URL example: https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=8&scope=bot%20applications.commands",
-            "5. Make sure bot role is ABOVE the roles it needs to manage in Server Settings → Roles (drag VOID-NUKE role to top)",
+            "3. Save, then OAuth2 → URL Generator → Scopes: bot + applications.commands, Permissions: Administrator (8)",
+            "4. Invite: https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=8&scope=bot%20applications.commands",
+            "5. In Server Settings → Roles, drag bot role ABOVE roles it manages",
         ],
-        "required_intents_details": REQUIRED_INTENTS,
-        "required_perms_details": REQUIRED_PERMISSIONS,
+        "required_intents_details":REQUIRED_INTENTS,
+        "required_perms_details":REQUIRED_PERMISSIONS,
     }
-
-    # If has guild data, add extra diagnostics
     if check.get("has_guild"):
-        g = manager.get_guild()
+        g=manager.get_guild()
         if g:
-            guide["diagnostics"] = {
-                "bot_top_role": check.get("top_role"),
-                "bot_top_role_pos": check.get("top_role_pos"),
-                "guild_roles_count": len(g.roles),
-                "is_owner": str(g.owner_id) == check.get("bot_id"),
+            guide["diagnostics"]={
+                "bot_top_role":check.get("top_role"),
+                "bot_top_role_pos":check.get("top_role_pos"),
+                "guild_roles_count":len(g.roles),
+                "is_owner":str(g.owner_id)==check.get("bot_id"),
+                "active_threads": threading.active_count(),
+                "active_tasks": list(manager.active_tasks.keys()),
             }
+    return jsonify({"permissions_check":check,"guide":guide})
 
-    return jsonify({"permissions_check": check, "guide": guide})
-
+# Multi-threaded logs endpoint - offload to executor for heavy logs
 @app.route('/api/logs')
 def get_logs():
-    limit=min(int(request.args.get('limit',100)),500)
-    logs=log_buffer.get_all()[-limit:]
+    def _get():
+        limit=min(int(request.args.get('limit',100)),500)
+        return log_buffer.get_all()[-limit:]
+    # Run in thread pool to not block Flask
+    future=flask_executor.submit(_get)
+    logs=future.result(timeout=2)
     return jsonify(logs)
 
 @app.route('/api/logs/clear', methods=['POST'])
@@ -176,14 +183,14 @@ def connect():
             if bot_loop: asyncio.run_coroutine_threadsafe(manager.bot.close(), bot_loop)
         except: pass
         time.sleep(1)
-    log_info(f"Connecting to guild {guild_id}...")
+    log_info(f"[THREAD {threading.current_thread().name}] Connecting to guild {guild_id}...")
     manager.guild_id=guild_id
-    bot_thread_obj=threading.Thread(target=run_bot, args=(token,guild_id), daemon=True)
+    bot_thread_obj=threading.Thread(target=run_bot, args=(token,guild_id), daemon=True, name="void-bot-main")
     bot_thread_obj.start()
     for _ in range(25):
         time.sleep(0.5)
         if manager.connected: break
-    return jsonify({"ok":True,"connected":manager.connected,"message":"Bot starting, check logs"})
+    return jsonify({"ok":True,"connected":manager.connected,"message":"Bot starting","thread":threading.current_thread().name})
 
 @app.route('/api/disconnect', methods=['POST'])
 def disconnect():
@@ -193,8 +200,7 @@ def disconnect():
             future=asyncio.run_coroutine_threadsafe(manager.bot.close(), bot_loop)
             future.result(timeout=5)
             log_info("Bot disconnected by user")
-        except Exception as e:
-            log_err(f"Disconnect error: {e}")
+        except Exception as e: log_err(f"Disconnect error: {e}")
     manager.connected=False
     manager.guild_info={}
     gc.collect()
@@ -212,23 +218,24 @@ def guilds():
 def channels():
     g=manager.get_guild()
     if not g: return jsonify({"error":"Guild not found"}),400
-    all_ch=[{"name":c.name,"id":str(c.id),"type":str(c.type)} for c in g.channels]
-    vcs=[{"name":c.name,"id":str(c.id)} for c in g.channels if isinstance(c,discord.VoiceChannel)]
-    tcs=[{"name":c.name,"id":str(c.id)} for c in g.channels if isinstance(c,discord.TextChannel)]
-    return jsonify({"all":all_ch,"voice":vcs,"text":tcs})
+    def _fetch():
+        all_ch=[{"name":c.name,"id":str(c.id),"type":str(c.type)} for c in g.channels]
+        vcs=[{"name":c.name,"id":str(c.id)} for c in g.channels if isinstance(c,discord.VoiceChannel)]
+        tcs=[{"name":c.name,"id":str(c.id)} for c in g.channels if isinstance(c,discord.TextChannel)]
+        return {"all":all_ch,"voice":vcs,"text":tcs}
+    future=flask_executor.submit(_fetch)
+    return jsonify(future.result(timeout=3))
 
 @app.route('/api/action', methods=['POST'])
 def do_action():
-    """Fixed execution - robust confirm handling"""
+    """Multi-threaded action execution - fixed confirm handling"""
     if not manager.connected or not manager.bot:
         return jsonify({"error":"Bot not connected - connect first","need_connect":True}),400
     data=request.get_json(silent=True) or {}
     action=data.get("action")
     params=data.get("params", {}) or {}
-    
-    # Debug log
-    print(f"[API ACTION] Got action={action} params={params}", flush=True)
-    log_info(f"API /action -> {action} {params}")
+    print(f"[API ACTION THREAD {threading.current_thread().name}] {action} {params}", flush=True)
+    log_info(f"API /action {action} {params}")
 
     if not action:
         return jsonify({"error":"No action provided"}),400
@@ -277,48 +284,49 @@ def do_action():
     mapped=action_map.get(str(action).lower(), str(action).lower())
     func=manager.ACTIONS.get(mapped)
     if not func:
-        err=f"Unknown action '{action}' -> '{mapped}' not in {list(manager.ACTIONS.keys())[:10]}"
+        err=f"Unknown action '{action}' -> '{mapped}'"
         log_err(err)
         return jsonify({"error":err}),400
 
-    # Handle confirm: accept True, "true", "on", 1, etc from frontend checkbox
-    confirm_raw = params.get("confirm", False)
-    is_confirmed = False
-    if isinstance(confirm_raw, bool):
-        is_confirmed = confirm_raw
-    elif isinstance(confirm_raw, str):
-        is_confirmed = confirm_raw.lower() in ("true","1","yes","on")
-    elif isinstance(confirm_raw, (int,float)):
-        is_confirmed = bool(confirm_raw)
+    confirm_raw=params.get("confirm",False)
+    is_confirmed=False
+    if isinstance(confirm_raw,bool): is_confirmed=confirm_raw
+    elif isinstance(confirm_raw,str): is_confirmed=confirm_raw.lower() in ("true","1","yes","on")
+    elif isinstance(confirm_raw,(int,float)): is_confirmed=bool(confirm_raw)
 
     destructive={"nuke","ban_all","kick_all","delete_channels","auto_raid"}
     if mapped in destructive and not is_confirmed:
-        return jsonify({"error":f"Action '{mapped}' requires confirmation","need_confirm":True}),400
+        return jsonify({"error":f"Action '{mapped}' requires confirmation checkbox","need_confirm":True}),400
 
-    # Ensure params are proper types - convert empty strings to defaults handling in bot_manager
     cleaned_params={}
     for k,v in params.items():
-        if v=="" or v is None:
-            continue
+        if v=="" or v is None: continue
         cleaned_params[k]=v
-    # preserve confirm as bool for logging
     cleaned_params["confirm"]=is_confirmed
 
     try:
         if manager.loop and manager.bot:
-            coro=func(manager, cleaned_params)
-            future=asyncio.run_coroutine_threadsafe(coro, manager.loop)
-            # Wait a tiny bit to catch immediate errors
-            try:
-                future.result(timeout=0.2)
-            except asyncio.TimeoutError:
-                pass # normal - task running
-            except Exception as e:
-                log_err(f"Action {mapped} immediate fail: {e}")
-                return jsonify({"error":f"Action failed immediately: {e}"}),500
+            # Multi-threaded execution: submit to command_executor, then run coroutine thread-safe
+            def _run_in_thread():
+                try:
+                    coro=func(manager, cleaned_params)
+                    future=asyncio.run_coroutine_threadsafe(coro, manager.loop)
+                    # Don't block Flask thread, just start
+                    log_info(f"[THREAD {threading.current_thread().name}] Started action: {mapped} {cleaned_params}")
+                    # Try quick check for immediate error
+                    try:
+                        future.result(timeout=0.3)
+                    except asyncio.TimeoutError:
+                        pass
+                    return True
+                except Exception as e:
+                    log_err(f"Thread run err {mapped}: {e}")
+                    return False
 
-            log_info(f"Started action: {mapped} with {cleaned_params}")
-            return jsonify({"ok":True,"action":mapped,"message":f"Task {mapped} started, check Live Logs"})
+            # Submit to thread pool (true multi-threading)
+            command_executor.submit(_run_in_thread)
+
+            return jsonify({"ok":True,"action":mapped,"message":f"Task {mapped} started in thread {threading.current_thread().name} - check logs","threaded":True})
         else:
             return jsonify({"error":"Bot loop not ready"}),500
     except Exception as e:
@@ -327,6 +335,16 @@ def do_action():
         print(tb, flush=True)
         log_err(f"Action {mapped} failed: {e}")
         return jsonify({"error":str(e),"traceback":tb[:1000]}),500
+
+@app.route('/api/threads')
+def threads_api():
+    return jsonify({
+        "active_threads": threading.active_count(),
+        "threads": [t.name for t in threading.enumerate()],
+        "active_tasks": manager.active_tasks,
+        "command_executor_threads": len(command_executor._threads) if hasattr(command_executor, '_threads') else 0,
+        "flask_executor_threads": len(flask_executor._threads) if hasattr(flask_executor, '_threads') else 0,
+    })
 
 if __name__=='__main__':
     port=int(os.environ.get('PORT',10000))
