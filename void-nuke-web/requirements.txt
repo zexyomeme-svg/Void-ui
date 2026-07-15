@@ -1,7 +1,9 @@
-# Optimized for Render Free Tier - 512MB RAM / 0.1 CPU
+# VOID-NUKE WEB - Render Free Tier Optimized - Python 3.11 + 3.13 compatible
+# Fixed: audioop removed in Python 3.13 - audioop-lts is the backport
 discord.py==2.4.0
 Flask==3.0.3
 Flask-Cors==4.0.1
 aiohttp==3.9.5
 gunicorn==22.0.0
 python-dotenv==1.0.1
+audioop-lts==0.2.1

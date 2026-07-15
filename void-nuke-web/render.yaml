@@ -2,14 +2,14 @@ services:
   - type: web
     name: void-nuke-web
     env: python
-    region: oregon # free tier available
+    region: oregon
     plan: free
     branch: main
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn app:app --workers 1 --threads 2 --timeout 120 --bind 0.0.0.0:$PORT --worker-class gthread"
+    buildCommand: "pip install --no-cache-dir -r requirements.txt"
+    startCommand: "python run.py --prod"
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.11.9
       - key: PYTHONUNBUFFERED
         value: 1
       - key: PYTHONDONTWRITEBYTECODE
@@ -19,10 +19,8 @@ services:
     healthCheckPath: /health
     autoDeploy: false
 
-# Render Free Tier Specs:
-# 512 MB RAM, 0.1 CPU, 750 hours/month
-# Optimized with:
-# - 1 worker (not 2-4) to stay under 512MB
-# - gthread with 2 threads (low CPU)
-# - Bot runs in same process thread, not extra worker
-# - Semaphore 3 for Discord API calls
+# Notes:
+# - PYTHON_VERSION 3.11.9 avoids Python 3.13 audioop removal issue
+# - If using Python 3.13, audioop-lts in requirements.txt fixes it (shim in run.py/app.py/bot_manager.py)
+# - run.py --prod uses gunicorn 1 worker + 2 threads = ~200-300MB fits 512MB free tier
+# - All 39 original commands implemented in bot_manager.py
