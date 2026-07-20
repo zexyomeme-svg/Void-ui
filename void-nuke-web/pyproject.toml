@@ -1,9 +1,9 @@
 [project]
 name = "void-nuke-web"
-version = "6.0.0"
-description = "VOID-NUKE WEB - Adaptive for Vercel and Render Free Tier"
+version = "6.1.0"
+description = "VOID-NUKE WEB - Adaptive for Vercel and Render Free Tier - Fixed flat-layout"
 readme = "README.md"
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.11,<3.15"
 dependencies = [
     "discord.py==2.4.0",
     "Flask==3.0.3",
@@ -11,18 +11,25 @@ dependencies = [
     "aiohttp==3.9.5",
     "gunicorn==22.0.0",
     "python-dotenv==1.0.1",
-    # audioop-lts only for Python 3.13+ where audioop removed - conditional to fix Vercel 3.12 build error
+    # audioop-lts only for Python 3.13+ where audioop removed from stdlib
+    # Conditional to fix Vercel 3.12 build: on 3.12 builtin exists, skip lts
     "audioop-lts; python_version >= '3.13'",
 ]
 
-[tool.vercel]
-# Tell Vercel to use Python 3.11.9 (from .python-version file)
-# This pyproject.toml also helps uv resolver understand python version constraint
+# FIX for Vercel build error: "Multiple top-level packages discovered in a flat-layout: ['api', 'templates']"
+# Setuptools auto-discovers api and templates as packages, fails build
+# Solution from StackOverflow highest voted: disable auto discovery
+[tool.setuptools]
+py-modules = []
+packages = []
+
+# Alternative fix (if above not enough):
+[tool.setuptools.packages.find]
+exclude = ["api", "templates", "api.*", "templates.*"]
 
 [build-system]
 requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
 
-# For Vercel free tier adaptation
-[tool.uv]
-# Vercel uses uv for Python dependency resolution
-# We specify python version constraint to avoid audioop-lts unsatisfiable on 3.12
+[tool.vercel]
+# Python version is controlled by .python-version file (3.12 default, supports 3.12/3.13/3.14 per Vercel docs)

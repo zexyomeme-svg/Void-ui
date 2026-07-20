@@ -9,18 +9,24 @@ services:
     startCommand: "python run.py --prod"
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.9
+        value: 3.12.0
       - key: PYTHONUNBUFFERED
         value: 1
       - key: PYTHONDONTWRITEBYTECODE
         value: 1
       - key: PORT
         value: 10000
+      - key: VERCEL
+        value: 0
     healthCheckPath: /health
     autoDeploy: false
 
-# Notes:
-# - PYTHON_VERSION 3.11.9 avoids Python 3.13 audioop removal issue
-# - If using Python 3.13, audioop-lts in requirements.txt fixes it (shim in run.py/app.py/bot_manager.py)
-# - run.py --prod uses gunicorn 1 worker + 2 threads = ~200-300MB fits 512MB free tier
-# - All 39 original commands implemented in bot_manager.py
+# Notes (Adaptive Vercel + Render):
+# - Vercel free tier: 10s timeout default (30s max with maxDuration), 50MB compressed, no WebSockets, stateless
+#   Supports Python 3.12 (default), 3.13, 3.14 - NOT 3.11 (hence .python-version 3.12)
+# - Render free tier: 512MB RAM, 0.1 CPU, 750h, persistent, supports WebSockets
+#   Supports Python 3.11.9, 3.12 - we now use 3.12 for both platforms to be consistent
+# - Python 3.12 has builtin audioop (deprecated but exists), so no need audioop-lts
+# - Python 3.13 removed audioop, needs audioop-lts; conditional marker handles it: audioop-lts; python_version >= "3.13"
+# - run.py --prod uses gunicorn 1 worker / 4 threads ~250MB fits 512MB
+# - All 39 commands + safe_send + MT perfected
