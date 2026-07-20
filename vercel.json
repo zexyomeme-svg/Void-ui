@@ -1,0 +1,14 @@
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/void-nuke-web/api/index"
+    }
+  ],
+  "functions": {
+    "void-nuke-web/api/index.py": {
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  }
+}

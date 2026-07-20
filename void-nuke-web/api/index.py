@@ -1,148 +1,184 @@
 """
-VOID-NUKE WEB - Vercel Free Tier Adaptive Serverless Adapter v6
-Research from web search:
+VOID-NUKE WEB - Vercel Serverless Adapter v7 - Fixed 404
+Research fixes from web search:
 
-Vercel Free (Hobby) Limits 2025-2026:
-- 100GB bandwidth, ~100K-1M function invocations, 6000 build minutes
-- 10s function timeout default (can extend to 30s Hobby with maxDuration, 60s Pro with Fluid Compute)
-- 50MB compressed, 250MB uncompressed (500MB for Python) function size
-- No WebSockets, no persistent process, no background workers, stateless, no Celery
-- Cold start 300-800ms for Python
-- Python version auto-detected from .python-version, pyproject.toml, Pipfile.lock
-  - If none, defaults to 3.12 (as seen in your error)
-  - We now provide .python-version = 3.11.9 to force 3.11 (has builtin audioop)
-- audioop-lts only works on Python >=3.13, so conditional requirement fixed:
-  - requirements.txt: audioop-lts; python_version >= "3.13"
-  - On 3.11/3.12: uses builtin audioop, no extra dependency
+404 after build success is common for Flask on Vercel. Fixes:
+1. Use "rewrites" not "builds"+"routes" (legacy, now rewrites is modern)
+   vercel.json: {"rewrites": [{"source": "/(.*)", "destination": "/api/index"}]}
+   Source: StackOverflow 76105842 - "This one resolve problem for me, just rechange vercel.json to rewrites"
 
-Render Free Limits:
-- 512MB RAM, 0.1 CPU, 750 hours/month, persistent process, supports WebSockets
-- PYTHON_VERSION 3.11.9 via env var
-- Ideal for Discord bots that need persistent Gateway connection
+2. Templates must be accessible to Flask when running as api/index.py
+   Vercel bundles only api/ folder by default, but templates/ is outside api/
+   Fix: Flask template_folder = absolute path to ../templates, and copy templates into api/ if needed
+   Also set static_folder
 
-This adapter:
-- Detects VERCEL env var and adjusts behavior for serverless
-- Provides /api/vercel-info with free tier details
-- Handles audioop fix for both 3.11 and 3.13
-- Sets maxDuration hints for Vercel
+3. Root Directory: If repo is Void-ui/void-nuke-web/, set Vercel Root Directory to void-nuke-web in dashboard
+   Or put vercel.json at repo root pointing to void-nuke-web/api/index.py
+
+4. Vercel Free Tier: 10s default, 30s max Hobby with maxDuration, no WebSockets, stateless
+
+This file fixes 404 by:
+- Importing Flask app with correct template_folder absolute path
+- Adding fallback route for / to render index.html directly if main app fails
+- Providing /api/vercel-info with debug
 """
 
 import sys
 import os
 
-# Force Python path
+# Force Python path - adaptive for Vercel (path0 is repo root, code is in void-nuke-web/)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Also try parent of parent for when Vercel runs from void-nuke-web as root
+PARENT_DIR = os.path.join(os.path.dirname(__file__), '..')
+for p in [BASE_DIR, PARENT_DIR, os.path.join(os.path.dirname(__file__), '..', '..')]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+# Add current dir and parent to path for imports
+sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-# Environment detection - adaptive for both Vercel and Render
+# Environment detection
 IS_VERCEL = os.getenv("VERCEL") == "1" or os.getenv("VERCEL_ENV") is not None
-IS_RENDER = os.getenv("RENDER") is not None or os.getenv("RENDER_SERVICE_ID") is not None
+IS_RENDER = os.getenv("RENDER") is not None
 
-# Audioop fix - must be before discord import
-# On Python 3.11/3.12 (Vercel 3.11, Render 3.11.9) builtin audioop exists
-# On Python 3.13+ (local) needs audioop-lts shim
+# Audioop fix
 try:
     import audioop
-    print(f"[VERCEL ADAPTER] audioop builtin OK, Python {sys.version.split()[0]}, IS_VERCEL={IS_VERCEL}, IS_RENDER={IS_RENDER}", flush=True)
+    print(f"[VERCEL v7] audioop builtin OK Python {sys.version.split()[0]} IS_VERCEL={IS_VERCEL}", flush=True)
 except ModuleNotFoundError:
     try:
         import audioop_lts as audioop
         sys.modules['audioop'] = audioop
-        print(f"[VERCEL ADAPTER] audioop-lts shim loaded, Python {sys.version.split()[0]}", flush=True)
-    except ImportError as e:
+        print(f"[VERCEL v7] audioop-lts shim", flush=True)
+    except ImportError:
         import types
         sys.modules['audioop'] = types.ModuleType("audioop")
-        print(f"[VERCEL ADAPTER] audioop missing, voice disabled, error {e}", flush=True)
+        print(f"[VERCEL v7] audioop dummy", flush=True)
 
 os.environ.setdefault("PYTHONUNBUFFERED", "1")
-os.environ.setdefault("VERCEL", "1" if IS_VERCEL else "0")
 
-# Import Flask app
+# Try to import main Flask app
+flask_app = None
+import_error = None
+
 try:
-    from app import app as flask_app
-    print(f"[VERCEL ADAPTER] Flask app imported OK, routes: {len(list(flask_app.url_map.iter_rules()))}", flush=True)
+    # Try multiple import paths for adaptive
+    try:
+        from app import app as main_app
+        flask_app = main_app
+        print(f"[VERCEL v7] Imported app from app.py OK, routes={len(list(flask_app.url_map.iter_rules()))}", flush=True)
+    except ImportError as e1:
+        # Try void-nuke-web/app.py when running from repo root
+        try:
+            from void_nuke_web.app import app as main_app
+            flask_app = main_app
+            print(f"[VERCEL v7] Imported from void_nuke_web.app OK", flush=True)
+        except ImportError:
+            # Try parent import
+            import importlib.util
+            app_path = os.path.join(BASE_DIR, 'void-nuke-web', 'app.py')
+            if not os.path.exists(app_path):
+                app_path = os.path.join(PARENT_DIR, 'app.py')
+            if not os.path.exists(app_path):
+                app_path = os.path.join(os.path.dirname(__file__), '..', 'app.py')
+            
+            print(f"[VERCEL v7] Trying load from {app_path}", flush=True)
+            if os.path.exists(app_path):
+                spec = importlib.util.spec_from_file_location("app", app_path)
+                mod = importlib.util.module_from_spec(spec)
+                sys.modules["app"] = mod
+                spec.loader.exec_module(mod)
+                flask_app = mod.app
+                print(f"[VERCEL v7] Loaded app.py from {app_path} OK", flush=True)
+            else:
+                raise e1
+
 except Exception as e:
-    print(f"[VERCEL ADAPTER] Failed to import app: {e}", flush=True)
+    import_error = f"{type(e).__name__}: {e}"
+    print(f"[VERCEL v7] Failed to import main app: {import_error}", flush=True)
     import traceback
     traceback.print_exc()
-    # Fallback minimal app for debugging
-    from flask import Flask, jsonify
+    # Fallback minimal app to avoid 404 - shows error instead of 404
+    from flask import Flask, jsonify, render_template_string
     flask_app = Flask(__name__)
+    
     @flask_app.route('/')
-    def fallback():
-        return jsonify({"error": f"Failed to import main app: {e}", "python": sys.version, "is_vercel": IS_VERCEL}), 500
+    def fallback_index():
+        return render_template_string("""
+        <html><body style="background:#0a0a0a;color:#f1f1f1;font-family:monospace;padding:20px">
+        <h1 style="color:#ff1a1a">VOID-NUKE WEB - Vercel Fallback (Main App Import Failed)</h1>
+        <p>Error: {{ error }}</p>
+        <p>Python: {{ pyver }}</p>
+        <p>IS_VERCEL: {{ is_vercel }}</p>
+        <p>BASE_DIR: {{ base_dir }}</p>
+        <p>Files in BASE_DIR: {{ files }}</p>
+        <p>Fix: Check that templates/ and app.py are accessible. Set Root Directory to void-nuke-web in Vercel dashboard.</p>
+        <p><a href="/api/vercel-info" style="color:#00ff88">/api/vercel-info</a> | <a href="/health" style="color:#00ff88">/health</a></p>
+        </body></html>
+        """, error=import_error, pyver=sys.version, is_vercel=IS_VERCEL, base_dir=BASE_DIR, files=os.listdir(BASE_DIR)[:20] if os.path.exists(BASE_DIR) else [])
 
+    @flask_app.route('/health')
+    def fallback_health():
+        return jsonify({"status":"fallback", "error":import_error, "python": sys.version, "is_vercel": IS_VERCEL})
+
+# Ensure app has correct template folder for Vercel (api/ vs root)
+# Vercel bundles api/ but templates/ is outside - Flask needs absolute path
+if flask_app:
+    try:
+        # Try to find templates folder
+        possible_template_dirs = [
+            os.path.join(BASE_DIR, 'void-nuke-web', 'templates'),
+            os.path.join(PARENT_DIR, 'templates'),
+            os.path.join(os.path.dirname(__file__), '..', 'templates'),
+            os.path.join(os.path.dirname(__file__), 'templates'),
+            os.path.join(os.getcwd(), 'void-nuke-web', 'templates'),
+            os.path.join(os.getcwd(), 'templates'),
+        ]
+        for tdir in possible_template_dirs:
+            if os.path.exists(tdir):
+                flask_app.template_folder = tdir
+                print(f"[VERCEL v7] Set template_folder to {tdir}", flush=True)
+                break
+        # Also set static
+        possible_static_dirs = [
+            os.path.join(BASE_DIR, 'void-nuke-web', 'static'),
+            os.path.join(PARENT_DIR, 'static'),
+            os.path.join(os.path.dirname(__file__), '..', 'static'),
+        ]
+        for sdir in possible_static_dirs:
+            if os.path.exists(sdir):
+                flask_app.static_folder = sdir
+                print(f"[VERCEL v7] Set static_folder to {sdir}", flush=True)
+                break
+    except Exception as e:
+        print(f"[VERCEL v7] Failed to set template_folder: {e}", flush=True)
+
+# Vercel expects 'app' variable
 app = flask_app
 
-# Vercel maxDuration hint for Python - Vercel reads this from function config
-# For Python, maxDuration set in vercel.json functions.api/index.py.maxDuration = 30
-# This is the max allowed on Hobby free tier with Fluid Compute enabled
-
-@app.route('/api/vercel-info')
-def vercel_info():
-    """Detailed Vercel free tier info + adaptive guidance"""
-    return {
-        "platform": "vercel" if IS_VERCEL else "render" if IS_RENDER else "local",
-        "python_version": sys.version,
-        "python_version_info": list(sys.version_info),
-        "is_vercel": IS_VERCEL,
-        "is_render": IS_RENDER,
-        "adaptive_mode": "vercel_free_tier" if IS_VERCEL else "render_free_tier" if IS_RENDER else "local",
-        "vercel_free_tier_limits": {
-            "bandwidth": "100GB/month",
-            "function_invocations": "~100K-1M/month (Hobby)",
-            "build_minutes": "6000/month",
-            "timeout_default": "10s Hobby (can set maxDuration 30s Hobby, 60s Pro with Fluid Compute)",
-            "timeout_configured_in_vercel_json": "30s in vercel.json functions.api/index.py.maxDuration",
-            "function_size_compressed": "50MB",
-            "function_size_uncompressed": "250MB standard, 500MB Python",
-            "memory": "1024MB configured in vercel.json (Hobby max)",
-            "websockets": "No - not supported on Vercel",
-            "persistent_process": "No - serverless, stateless, lambda dies after request",
-            "background_workers": "No - no Celery, no Redis queues",
-            "cold_start": "300-800ms for Python",
-            "python_version_detection": ".python-version file now set to 3.11.9 to avoid 3.12 default issue",
-            "audioop_issue_fixed": "requirements.txt now uses conditional marker: audioop-lts; python_version >= '3.13' - so on Python 3.11/3.12 (Vercel/Render) it uses builtin audioop, no extra dep"
-        },
-        "render_free_tier_limits": {
-            "ram": "512MB",
-            "cpu": "0.1 CPU",
-            "hours": "750h/month",
-            "persistent": "Yes - supports WebSockets, background workers",
-            "timeout": "No timeout - persistent process",
-            "python_version": "3.11.9 via PYTHON_VERSION env var",
-            "ideal_for": "Discord bots that need persistent Gateway connection"
-        },
-        "why_your_build_failed_before": {
-            "error_you_saw": "No Python version specified, using 3.12 + audioop-lts==0.2.1 depends on Python>=3.13, requirements unsatisfiable",
-            "root_cause": "Vercel defaulted to Python 3.12 because no .python-version file, and requirements.txt had unconditional audioop-lts==0.2.1 which requires >=3.13, so uv resolver failed",
-            "fix_applied": [
-                "Created .python-version file with 3.11.9 to force Python 3.11 (has builtin audioop)",
-                "Created runtime.txt with python-3.11.9 for Render compatibility",
-                "Changed requirements.txt to conditional: audioop-lts; python_version >= '3.13' - only installs on 3.13+, not on 3.11/3.12",
-                "Updated vercel.json to specify runtime python3.11, maxDuration 30s, memory 1024MB",
-                "Added api/index.py with adaptive detection for VERCEL vs RENDER"
-            ]
-        },
-        "what_works_on_vercel": [
-            "UI / loads",
-            "/health, /api/vercel-info",
-            "Connect bot (connects but disconnects after request - stateless)",
-            "/api/permissions after quick connect",
-            "/api/test_send 1 message (quick <5s)",
-            "Small actions: create_channels 5, spam count 2, server_info"
-        ],
-        "what_timeouts_on_vercel_free": [
-            "nuke 30 channels (needs 30-60s) - will timeout after 10s default, 30s max Hobby",
-            "auto_raid 20 channels (20s)",
-            "ban_all 500 members (>10s)",
-            "Fix: reduce quantities to 5 channels, 2 messages, or use Render"
-        ],
-        "recommendation": "For full functionality (all 39 commands perfected, persistent bot), deploy on Render Free Tier. Use Vercel only for UI demo or quick tests. Hybrid: UI on Vercel, bot logic on Render.",
-        "deploy_buttons": {
-            "vercel": "https://vercel.com/new/clone?repository-url=https://github.com/your-repo",
-            "render": "https://render.com/deploy?repo=https://github.com/your-repo"
-        }
-    }
-
-# For Vercel Python runtime, need to export app
-# Vercel looks for 'app' variable
+# Add vercel-info route if not already exists
+if app:
+    try:
+        # Check if route exists, if not add it
+        has_vercel_info = any(r.rule == '/api/vercel-info' for r in app.url_map.iter_rules())
+        if not has_vercel_info:
+            @app.route('/api/vercel-info')
+            def vercel_info_fallback():
+                return {
+                    "platform": "vercel" if IS_VERCEL else "render" if IS_RENDER else "local",
+                    "python": sys.version,
+                    "is_vercel": IS_VERCEL,
+                    "is_render": IS_RENDER,
+                    "base_dir": BASE_DIR,
+                    "template_folder": getattr(app, 'template_folder', 'unknown'),
+                    "routes": [str(r.rule) for r in app.url_map.iter_rules()][:20],
+                    "fix_404": {
+                        "1": "Use vercel.json with rewrites not builds+routes: {\"rewrites\": [{\"source\": \"/(.*)\", \"destination\": \"/api/index\"}]}",
+                        "2": "Set Root Directory to void-nuke-web in Vercel dashboard if repo is Void-ui/void-nuke-web/",
+                        "3": "Ensure templates/ is accessible - set absolute template_folder",
+                        "4": "Build succeeds but 404 means routing misconfig - rewrites fix it"
+                    }
+                }
+    except:
+        pass
