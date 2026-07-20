@@ -1,7 +1,7 @@
 [project]
 name = "void-nuke-web"
-version = "6.1.0"
-description = "VOID-NUKE WEB - Adaptive for Vercel and Render Free Tier - Fixed flat-layout"
+version = "6.2.0"
+description = "VOID-NUKE WEB - Adaptive for Vercel and Render"
 readme = "README.md"
 requires-python = ">=3.11,<3.15"
 dependencies = [
@@ -11,25 +11,15 @@ dependencies = [
     "aiohttp==3.9.5",
     "gunicorn==22.0.0",
     "python-dotenv==1.0.1",
-    # audioop-lts only for Python 3.13+ where audioop removed from stdlib
-    # Conditional to fix Vercel 3.12 build: on 3.12 builtin exists, skip lts
     "audioop-lts; python_version >= '3.13'",
 ]
 
-# FIX for Vercel build error: "Multiple top-level packages discovered in a flat-layout: ['api', 'templates']"
-# Setuptools auto-discovers api and templates as packages, fails build
-# Solution from StackOverflow highest voted: disable auto discovery
-[tool.setuptools]
-py-modules = []
-packages = []
-
-# Alternative fix (if above not enough):
+# FIX flat-layout error: api and templates detected as packages
+# https://stackoverflow.com/questions/72294299/multiple-top-level-packages-discovered
+# Use exclude, not packages = [] + packages.find which conflicts
 [tool.setuptools.packages.find]
 exclude = ["api", "templates", "api.*", "templates.*"]
 
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
-
-[tool.vercel]
-# Python version is controlled by .python-version file (3.12 default, supports 3.12/3.13/3.14 per Vercel docs)
