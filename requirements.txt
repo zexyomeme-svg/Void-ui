@@ -1,0 +1,15 @@
+# VOID-NUKE WEB - Adaptive for Vercel + Render Free Tier
+# Vercel free: 10s timeout (up to 30s Hobby with maxDuration), 50MB compressed, no WebSockets, stateless
+# Render free: 512MB RAM, 0.1 CPU, 750h, persistent, supports WebSockets
+# FIX: audioop-lts only for Python >=3.13, not for 3.12 (Vercel default 3.12) or 3.11 (Render)
+# Research: https://github.com/AbstractUmbra/audioop - use marker python_version >= "3.13"
+
+discord.py==2.4.0
+Flask==3.0.3
+Flask-Cors==4.0.1
+aiohttp==3.9.5
+gunicorn==22.0.0
+python-dotenv==1.0.1
+# Conditional: only install audioop-lts on Python 3.13+ where audioop removed from stdlib
+# On Python 3.11/3.12 (Render 3.11.9, Vercel 3.11/3.12), use builtin audioop - no need for lts
+audioop-lts; python_version >= "3.13"
