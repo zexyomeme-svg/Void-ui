@@ -1,0 +1,28 @@
+[project]
+name = "void-nuke-web"
+version = "6.0.0"
+description = "VOID-NUKE WEB - Adaptive for Vercel and Render Free Tier"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "discord.py==2.4.0",
+    "Flask==3.0.3",
+    "Flask-Cors==4.0.1",
+    "aiohttp==3.9.5",
+    "gunicorn==22.0.0",
+    "python-dotenv==1.0.1",
+    # audioop-lts only for Python 3.13+ where audioop removed - conditional to fix Vercel 3.12 build error
+    "audioop-lts; python_version >= '3.13'",
+]
+
+[tool.vercel]
+# Tell Vercel to use Python 3.11.9 (from .python-version file)
+# This pyproject.toml also helps uv resolver understand python version constraint
+
+[build-system]
+requires = ["setuptools", "wheel"]
+
+# For Vercel free tier adaptation
+[tool.uv]
+# Vercel uses uv for Python dependency resolution
+# We specify python version constraint to avoid audioop-lts unsatisfiable on 3.12

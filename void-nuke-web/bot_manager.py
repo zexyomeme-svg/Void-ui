@@ -72,14 +72,29 @@ SERVER_CONFIG={"new_name":"RAIDED BY VOID-NUKE","new_icon":"","new_description":
 BOT_PRESENCE={"type":"playing","text":f"{TELEGRAM_TAG} · {DISCORD_TAG}"}
 NO_BAN_KICK_ID=[]
 
-# --- Multi-threading executors ---
-# For CPU/IO blocking tasks (icon download, file writes)
-blocking_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="void-blocking")
-# For running multiple commands concurrently (each command in its own thread tracking)
-command_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="void-cmd")
+# --- Multi-threading executors - Adaptive for Vercel vs Render ---
+# Vercel free tier: serverless, 10s timeout (30s with maxDuration), 50MB compressed, no WebSockets, stateless
+# Render free tier: 512MB RAM, 0.1 CPU, 750h, persistent, supports WebSockets
+import os
+IS_VERCEL = os.getenv("VERCEL") == "1" or os.getenv("VERCEL_ENV") is not None
+IS_RENDER = os.getenv("RENDER") is not None
 
-# Discord API rate limit protection - multi-threaded semaphore
-MAX_CONCURRENT = 5  # Increased from 3 to 5 for multi-threading, still safe for 0.1 CPU
+# Adaptive thread counts
+if IS_VERCEL:
+    # Vercel serverless: limited memory 1024MB, short-lived, reduce threads to save memory/time
+    BLOCKING_WORKERS = 1
+    COMMAND_WORKERS = 2
+    MAX_CONCURRENT = 3  # Lower for Vercel to avoid rate limit quickly dying
+    print(f"[ADAPTIVE] Vercel detected - using low threads: blocking={BLOCKING_WORKERS} cmd={COMMAND_WORKERS} concurrent={MAX_CONCURRENT}", flush=True)
+else:
+    # Render or local: persistent, can use more threads
+    BLOCKING_WORKERS = 2
+    COMMAND_WORKERS = 4
+    MAX_CONCURRENT = 5
+    print(f"[ADAPTIVE] Render/Local detected - using threads: blocking={BLOCKING_WORKERS} cmd={COMMAND_WORKERS} concurrent={MAX_CONCURRENT} IS_RENDER={IS_RENDER}", flush=True)
+
+blocking_executor = ThreadPoolExecutor(max_workers=BLOCKING_WORKERS, thread_name_prefix="void-blocking")
+command_executor = ThreadPoolExecutor(max_workers=COMMAND_WORKERS, thread_name_prefix="void-cmd")
 SEM = asyncio.Semaphore(MAX_CONCURRENT)
 
 # Permissions - expanded for message sending diagnostics

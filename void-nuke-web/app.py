@@ -35,8 +35,11 @@ app = Flask(__name__)
 CORS(app, resources={r"/api/*":{"origins":"*"}})
 app.config['MAX_CONTENT_LENGTH']=1*1024*1024
 
-# Multi-threading executors for Flask
-flask_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="flask-api")
+# Multi-threading executors for Flask - Adaptive Vercel vs Render
+IS_VERCEL_FLASK = os.getenv("VERCEL") == "1" or os.getenv("VERCEL_ENV") is not None
+FLASK_WORKERS = 2 if IS_VERCEL_FLASK else 4
+flask_executor = ThreadPoolExecutor(max_workers=FLASK_WORKERS, thread_name_prefix="flask-api")
+print(f"[ADAPTIVE FLASK] IS_VERCEL={IS_VERCEL_FLASK} workers={FLASK_WORKERS}", flush=True)
 
 bot_loop=None
 bot_thread_obj=None
